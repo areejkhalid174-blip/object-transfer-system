@@ -1,21 +1,26 @@
-import React from "react";
 import { useState } from "react";
 
-import { Text, TouchableOpacity, View,ScrollView, TextInput } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const CustomerSignup = ({ navigation }) => {
+import { handleSignUp } from "../Helper/firebaseHelper";
+
+const SignUp = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
 
+
   const goToRigester = () => {
+      handleSignUp(
+        email,
+        password,
+        {role: "user", firstName, lastName}
+      )
+  }
 
-    console.log(firstName,lastName,password, email);
 
-    navigation.navigate("VerificationOtp");
-  };
 
   return (
     <ScrollView style={{ Height: "100%" }}>
@@ -131,4 +136,4 @@ const CustomerSignup = ({ navigation }) => {
   );
 };
 
-export default CustomerSignup;
+export default SignUp;
