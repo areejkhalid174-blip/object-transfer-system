@@ -6,7 +6,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import HomeRider from "./pages/HomeRider";
 import Mobile from "./pages/Mobile";
 import Payment2 from "./pages/Payment2";
-import RiderChat from "./pages/RiderChat";
+// import RiderChat from "./pages/RiderChat";
 import RiderEarning from "./pages/RiderEarning";
 import RiderHistory from "./pages/RiderHistory";
 import RiderLogin from "./pages/RiderLogin";
@@ -18,7 +18,7 @@ import SupportingDocuments from "./pages/SupportingDocuments";
 import VehicelInformationr from "./pages/VehicelInformationr";
 
 // Customer
-import CustomerChat from "./pages/CustomerChat";
+// import CustomerChat from "./pages/CustomerChat";
 import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerOtp from "./pages/CustomerOtp";
@@ -37,7 +37,7 @@ import { persistor, store } from "./redux/store";
 const Stack = createNativeStackNavigator();
 
 const RiderStack = () => (
-  <Stack.Navigator initialRouteName="RiderSignup">
+  <Stack.Navigator initialRouteName="HomeRider">
     <Stack.Screen name="Mobile" component={Mobile} />
     <Stack.Screen name="RiderSignup" component={RiderSignup} />
     <Stack.Screen name="RiderLogin" component={RiderLogin} />
@@ -48,13 +48,12 @@ const RiderStack = () => (
     <Stack.Screen name="RiderHistory" component={RiderHistory} />
     <Stack.Screen name="RiderEarning" component={RiderEarning} />
     <Stack.Screen name="HomeRider" component={HomeRider} />
-    <Stack.Screen name="RiderChat" component={RiderChat} />
     <Stack.Screen name="Setting" component={Setting} />
   </Stack.Navigator>
 );
 
 const CustomerStack = () => (
-  <Stack.Navigator initialRouteName="CustomerSignup">
+  <Stack.Navigator initialRouteName="CustomerHome">
     <Stack.Screen name="Mobile" component={Mobile} />
 
     <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
@@ -70,7 +69,6 @@ const CustomerStack = () => (
     <Stack.Screen name="SelectDate" component={SelectDate} />
     <Stack.Screen name="Vehicle" component={Vehicle} />
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />
-    <Stack.Screen name="CustomerChat" component={CustomerChat} />
   </Stack.Navigator>
 );
 
@@ -85,8 +83,9 @@ const App = () => {
         return <RiderStack />;
       default:
         return (
-          <Stack.Navigator initialRouteName="Login">
-            <Stack.Screen name="Login" component={BuyerLogin} />
+          <Stack.Navigator initialRouteName="Signup">
+            <Stack.Screen name="Login" component={CustomerLogin} />
+            <Stack.Screen name = "Signup" component={CustomerSignup} />
           </Stack.Navigator>
         );
     }

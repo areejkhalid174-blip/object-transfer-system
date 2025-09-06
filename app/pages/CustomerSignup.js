@@ -3,21 +3,36 @@ import { useState } from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+import { useDispatch } from "react-redux";
 import { handleSignUp } from "../Helper/firebaseHelper";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
+
+
 
 const SignUp = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+   const dispatch = useDispatch();
 
 
-  const goToRigester = () => {
-      handleSignUp(
-        email,
-        password,
-        {role: "user", firstName, lastName}
-      )
+  const goToRigester = async () => {
+    
+    const user = await handleSignUp(
+      email,
+      password,
+      { role: "Customer", firstName, lastName }
+    )
+
+    if(user?.uid){
+        dispatch(setRole("Customer"))
+        dispatch(setUser(user))
+    } else {
+      alert("Error in sign up")
+    }
+
+
   }
 
 

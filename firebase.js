@@ -4,16 +4,15 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 
-
 const firebaseConfig = {
-     apiKey: "AIzaSyBKaNOBwezKzm11MtwRu42vlzilLrTlV5c",
-  authDomain: "object-transfer-system-ae078.firebaseapp.com",
-  projectId: "object-transfer-system-ae078",
-  storageBucket: "object-transfer-system-ae078.firebasestorage.app",
-  messagingSenderId: "1062925432344",
-  appId: "1:1062925432344:web:3a999d921d7edea3b4f56d",
-  measurementId: "G-VXHGKV9827"
-  };
+  apiKey: "AIzaSyAH5Z-QJgzJX_F9V3wk5hRwJan5oz_XwbQ",
+  authDomain: "objecttransfersystem.firebaseapp.com",
+  projectId: "objecttransfersystem",
+  storageBucket: "objecttransfersystem.firebasestorage.app",
+  messagingSenderId: "669666525575",
+  appId: "1:669666525575:web:9f78a43420630ea2415322",
+  measurementId: "G-7ML6Z5P1PC"
+};
 
 // Initialize Firebase
 try {

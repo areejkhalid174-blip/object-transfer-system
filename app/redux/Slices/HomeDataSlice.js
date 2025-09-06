@@ -1,9 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+
 const initialState = {
     user: {},
     name: "",
-    role: "Rider"
+    role: "",
+    loading: false,
 };
 
 const homeSlice = createSlice({
@@ -17,8 +19,12 @@ const homeSlice = createSlice({
             state.name = action.payload
         },
         setRole: (state, action) => {
-            state.roler = action.payload
+            state.role = action.payload
         },
+        setLoading: (state, action) => {
+            state.loading = action.payload
+        },
+       
 
 
 
