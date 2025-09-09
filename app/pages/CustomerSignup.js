@@ -32,7 +32,6 @@ const SignUp = ({ navigation }) => {
       alert("Error in sign up")
     }
 
-
   }
 
 
