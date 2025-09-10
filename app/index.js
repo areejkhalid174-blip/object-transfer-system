@@ -15,12 +15,12 @@ import RiderVerification from "./pages/RiderVerification";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
 import VehicelInformationr from "./pages/VehicelInformationr";
+import select from "./pages/select";
 
 // Customer
 // import CustomerChat from "./pages/CustomerChat";
 import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
-import CustomerOtp from "./pages/CustomerOtp";
 import CustomerSignup from "./pages/CustomerSignup";
 import Order from "./pages/Order";
 import PackageDetail from "./pages/PackageDetail";
@@ -38,7 +38,6 @@ const Stack = createNativeStackNavigator();
 const RiderStack = () => (
   <Stack.Navigator initialRouteName="HomeRider">
     <Stack.Screen name="Mobile" component={Mobile} />
-
     <Stack.Screen name="RiderOtp" component={RiderOtp} />
     <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} />
     <Stack.Screen name="RiderVerification" component={RiderVerification} />
@@ -54,9 +53,9 @@ const CustomerStack = () => (
   <Stack.Navigator initialRouteName="CustomerHome">
     <Stack.Screen name="Mobile" component={Mobile} />
 
-    <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
-    <Stack.Screen name="CustomerLogin" component={CustomerLogin} />
-    <Stack.Screen name="CustomerOtp" component={CustomerOtp} />
+    {/* <Stack.Screen name="CustomerSignup" component={CustomerSignup} /> */}
+    {/* <Stack.Screen name="CustomerLogin" component={CustomerLogin} /> */}
+    {/* <Stack.Screen name="CustomerOtp" component={CustomerOtp} /> */}
     <Stack.Screen name="CustomerHome" component={CustomerHome} />
     <Stack.Screen name="Order" component={Order} />
     <Stack.Screen name="PackageDetail" component={PackageDetail} />
@@ -67,14 +66,17 @@ const CustomerStack = () => (
     <Stack.Screen name="SelectDate" component={SelectDate} />
     <Stack.Screen name="Vehicle" component={Vehicle} />
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />
+    <Stack.Screen name="select" component={select} />
+
   </Stack.Navigator>
 );
+
 
 const App = () => {
   // Choose stack based on role
   const RenderStack = () => {
     const userRole = useSelector((state) => state.home.role);
-    
+
     switch (userRole) {
       case "Customer":
         return <CustomerStack />;
@@ -82,11 +84,13 @@ const App = () => {
         return <RiderStack />;
       default:
         return (
-          <Stack.Navigator initialRouteName="RiderSignup">
+          <Stack.Navigator initialRouteName="select">
             <Stack.Screen name="Login" component={CustomerLogin} />
             <Stack.Screen name="Signup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
             {/* <Stack.Screen name="RiderLogin" component={RiderLogin} /> */}
+                <Stack.Screen name="select" component={select} />
+
           </Stack.Navigator>
         );
     }
