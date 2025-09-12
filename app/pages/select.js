@@ -8,7 +8,7 @@ export default function RoleSelection({navigation}) {
 
   }
   const handleSelectRole2 = () =>{
-    navigation.navigate("Signup")
+    navigation.navigate("CustomerSignup")
 
   }
   return (

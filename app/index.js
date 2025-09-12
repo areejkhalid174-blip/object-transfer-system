@@ -51,10 +51,7 @@ const RiderStack = () => (
 
 const CustomerStack = () => (
   <Stack.Navigator initialRouteName="CustomerHome">
-    <Stack.Screen name="Mobile" component={Mobile} />
-
-    {/* <Stack.Screen name="CustomerSignup" component={CustomerSignup} /> */}
-    {/* <Stack.Screen name="CustomerLogin" component={CustomerLogin} /> */}
+    {/* <Stack.Screen name="Mobile" component={Mobile} /> */}
     {/* <Stack.Screen name="CustomerOtp" component={CustomerOtp} /> */}
     <Stack.Screen name="CustomerHome" component={CustomerHome} />
     <Stack.Screen name="Order" component={Order} />
@@ -85,8 +82,8 @@ const App = () => {
       default:
         return (
           <Stack.Navigator initialRouteName="select">
-            <Stack.Screen name="Login" component={CustomerLogin} />
-            <Stack.Screen name="Signup" component={CustomerSignup} />
+            <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
+            <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
             {/* <Stack.Screen name="RiderLogin" component={RiderLogin} /> */}
                 <Stack.Screen name="select" component={select} />
