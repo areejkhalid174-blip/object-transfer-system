@@ -14,20 +14,20 @@ const SignUp = ({ navigation }) => {
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-   const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
 
   const goToRigester = async () => {
-    
+
     const user = await handleSignUp(
       email,
       password,
       { role: "Customer", firstName, lastName }
     )
 
-    if(user?.uid){
-        dispatch(setRole("Customer"))
-        dispatch(setUser(user))
+    if (user?.uid) {
+      dispatch(setRole("Customer"))
+      dispatch(setUser(user))
     } else {
       alert("Error in sign up")
     }
@@ -80,21 +80,7 @@ const SignUp = ({ navigation }) => {
           }}
           placeholder="Last Name"
         />
-        <TextInput
-          onChangeText={(e) => setPassword(e)}
-          style={{
-            borderColor: "#1c1b1fff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="password"
-        />
+
         <TextInput
           onChangeText={(e) => setEmail(e)}
           style={{
@@ -109,6 +95,21 @@ const SignUp = ({ navigation }) => {
             paddingLeft: 10,
           }}
           placeholder="Email"
+        />
+        <TextInput
+          onChangeText={(e) => setPassword(e)}
+          style={{
+            borderColor: "#1c1b1fff",
+            borderWidth: 1,
+            width: "80%",
+            height: 50,
+            alignSelf: "center",
+            borderRadius: 10,
+            marginTop: 40,
+            backgroundColor: "white",
+            paddingLeft: 10,
+          }}
+          placeholder="password"
         />
         <View>
           <Text
@@ -150,4 +151,4 @@ const SignUp = ({ navigation }) => {
   );
 };
 
-export default SignUp;
+export default SignUp;

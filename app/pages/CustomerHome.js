@@ -1,8 +1,15 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useDispatch } from "react-redux";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 export default function CustomerHome() {
+  const dispatch = useDispatch();
+  const logOut = () => {
+    dispatch(setUser(null));
+    dispatch(setRole(''));
+  };
+
   const options = [
     { id: 1, title: "Food Delivery", icon: "fast-food-outline" },
     { id: 2, title: "Parcel", icon: "cube-outline" },
@@ -25,6 +32,12 @@ export default function CustomerHome() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <TouchableOpacity onPress={logOut}>
+        <Text style={{ textAlign: "center", color: "#1c1b1fff", marginTop: 20 }}>
+          log OUT
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
