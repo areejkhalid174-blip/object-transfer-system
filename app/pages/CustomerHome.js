@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
 export default function CustomerHome() {
+  const [selected, setSelected] = useState(null); // state for selected option
+
   const options = [
     { id: 1, title: "Food Delivery", icon: "fast-food-outline" },
     { id: 2, title: "Parcel", icon: "cube-outline" },
@@ -18,10 +20,27 @@ export default function CustomerHome() {
 
       <View style={styles.grid}>
         {options.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.card}>
-            <Icon name={item.icon} size={40} color="black" />
-            <Text style={styles.cardText}>{item.title}</Text>
-            <Text style={styles.smallText}></Text>
+          <TouchableOpacity
+            key={item.id}
+            style={[
+              styles.card,
+              selected === item.id && styles.selectedCard, // highlight if selected
+            ]}
+            onPress={() => setSelected(item.id)} // update state
+          >
+            <Icon
+              name={item.icon}
+              size={40}
+              color={selected === item.id ? "#4A90E2" : "black"} // change icon color
+            />
+            <Text
+              style={[
+                styles.cardText,
+                selected === item.id && { color: "#4A90E2" },
+              ]}
+            >
+              {item.title}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -45,6 +64,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
+  selectedCard: {
+    backgroundColor: "#EAF3FF",
+    borderColor: "#4A90E2",
+  },
   cardText: { fontSize: 16, fontWeight: "600", marginTop: 8, color: "black" },
-  smallText: { fontSize: 12, color: "#777", marginTop: 2 },
 });

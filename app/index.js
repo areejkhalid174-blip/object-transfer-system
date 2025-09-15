@@ -73,7 +73,7 @@ const App = () => {
   // Choose stack based on role
   const RenderStack = () => {
     const userRole = useSelector((state) => state.home.role);
-
+    alert(userRole)
     switch (userRole) {
       case "Customer":
         return <CustomerStack />;
@@ -81,13 +81,11 @@ const App = () => {
         return <RiderStack />;
       default:
         return (
-          <Stack.Navigator initialRouteName="select">
+          <Stack.Navigator initialRouteName="CusromerLogin">
             <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
-            {/* <Stack.Screen name="RiderLogin" component={RiderLogin} /> */}
                 <Stack.Screen name="select" component={select} />
-
           </Stack.Navigator>
         );
     }

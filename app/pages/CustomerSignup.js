@@ -8,7 +8,6 @@ import { handleSignUp } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 
-
 const SignUp = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");

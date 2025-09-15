@@ -8,7 +8,7 @@ const CustomerLogin = ({ navigation }) => {
   const [password, setPassword] = useState("");
 
   const goToContinue = () => {
-    console.log(email,password);
+    console.log(email, password);
 
     navigation.navigate("RiderHome");
   };
@@ -58,7 +58,7 @@ const CustomerLogin = ({ navigation }) => {
       <View>
         <Text
           style={{
-            fontSize: 12,
+            fontSize: 20,
             color: "black",
             textAlign: "center",
             paddingTop: 20,
@@ -90,6 +90,20 @@ const CustomerLogin = ({ navigation }) => {
           Continue
         </Text>
       </TouchableOpacity>
+      <View>
+        <TouchableOpacity onPress={()=>navigation.navigate("CustomerSignup")}>
+          <Text
+            style={{
+              fontSize: 25,
+              color: "black",
+              textAlign: "center",
+              paddingTop: 50,
+            }}
+          >
+            don't have an account "SignUp"
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
