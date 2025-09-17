@@ -1,16 +1,27 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { getAllData } from "../Helper/firebaseHelper";
 
-export default function CustomerHome() {
+
+export default function CustomerHome({navigation}) {
   const [selected, setSelected] = useState(null); // state for selected option
+  const [data, setData] = useState([]);
+  // const options = [
+  //   { id: 1, title: "Food Delivery", icon: "fast-food-outline" },
+  //   { id: 2, title: "Parcel", icon: "cube-outline" },
+  //   { id: 3, title: "Groceries", icon: "cart-outline" },
+  //   { id: 4, title: "Others", icon: "ellipsis-horizontal-circle-outline" },
+  // ];
 
-  const options = [
-    { id: 1, title: "Food Delivery", icon: "fast-food-outline" },
-    { id: 2, title: "Parcel", icon: "cube-outline" },
-    { id: 3, title: "Groceries", icon: "cart-outline" },
-    { id: 4, title: "Others", icon: "ellipsis-horizontal-circle-outline" },
-  ];
+  const getCatData = async () => {
+    const cDAta = await getAllData("categories");
+    setData(cDAta);
+  };
+
+  useEffect(() => {
+    getCatData();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -19,14 +30,14 @@ export default function CustomerHome() {
       <Text style={styles.subtitle}>What are you sending today?</Text>
 
       <View style={styles.grid}>
-        {options.map((item) => (
+        {data.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={[
               styles.card,
               selected === item.id && styles.selectedCard, // highlight if selected
             ]}
-            onPress={() => setSelected(item.id)} // update state
+            onPress={() => navigation.navigate("Order",{id:item.id})} // update state
           >
             <Icon
               name={item.icon}
@@ -53,7 +64,11 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 20, color: "#555" },
   name: { fontSize: 26, fontWeight: "700", marginBottom: 10 },
   subtitle: { fontSize: 16, fontWeight: "500", marginBottom: 20 },
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
   card: {
     width: "47%",
     backgroundColor: "#f9f9f9",

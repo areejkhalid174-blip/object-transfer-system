@@ -1,13 +1,41 @@
-import React from "react";
-import { Text, TouchableOpacity, View, TextInput } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { addData } from "../Helper/firebaseHelper";
 
-const Register = ({ navigation }) => {
-  const goToPayment = () => {
-    navigation.navigate("Payment");
+const Register = ({ navigation, route }) => {
+  const id = route.params.id;
+  const [EnterPostcode, setEnterPostcode] = useState("");
+  const [Town, setTown] = useState("");
+  const [Street, setStreet] = useState("");
+  const [RecieverPhonenum, setRecieverPhonenum] = useState("");
+  const [NameofReciever, setNameofReciever] = useState("");
+
+  const goToPayment = async () => {
+    console.log(
+      EnterPostcode,
+      Town,
+      Street,
+      RecieverPhonenum,
+      NameofReciever
+    );
+    
+    await addData("orders", {
+      OrderName,
+      WeightByKg,
+      Quantity,
+      cat:id,
+      packageDetail,
+      addDetail,
+    });
   };
   return (
-    <View>
+    <ScrollView>
       <Text
         style={{
           fontSize: 20,
@@ -20,6 +48,7 @@ const Register = ({ navigation }) => {
       </Text>
 
       <TextInput
+      onChangeText={(e) => setEnterPostcode(e)}
         style={{
           borderColor: "#141616ff",
           borderWidth: 1,
@@ -34,6 +63,7 @@ const Register = ({ navigation }) => {
         placeholder="Enter Postcode"
       />
       <TextInput
+      onChangeText={(e) => setTown(e)}
         style={{
           borderColor: "#121414ff",
           borderWidth: 1,
@@ -48,6 +78,7 @@ const Register = ({ navigation }) => {
         placeholder="Town"
       />
       <TextInput
+      onChangeText={(e) => setStreet(e)}
         style={{
           borderColor: "#131516ff",
           borderWidth: 1,
@@ -62,6 +93,7 @@ const Register = ({ navigation }) => {
         placeholder="Street"
       />
       <TextInput
+      onChangeText={(e) => setRecieverPhonenum(e)}
         style={{
           borderColor: "#121414ff",
           borderWidth: 1,
@@ -76,6 +108,7 @@ const Register = ({ navigation }) => {
         placeholder="Reciever Phonenum"
       />
       <TextInput
+      onChangeText={(e) => setNameofReciever(e)}
         style={{
           borderColor: "#0c1011ff",
           borderWidth: 1,
@@ -90,60 +123,63 @@ const Register = ({ navigation }) => {
         placeholder="Name of Reciever"
       />
 
-      <view>
-        <Text
-          style={{
-            fontSize: 20,
-            color: "black",
-            textAlign: "center",
-            paddingTop: 10,
-          }}
-        >
-          Pickup location
-        </Text>
-        <TextInput
-          style={{
-            borderColor: "#182222ff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="Enter Postcode"
-        />
-        <TextInput
-          style={{
-            borderColor: "#252b2cff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="Town"
-        />
-        <TextInput
-          style={{
-            borderColor: "#121c1fff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="Street"
-        />
-      </view>
+      <Text
+        style={{
+          fontSize: 20,
+          color: "black",
+          textAlign: "center",
+          paddingTop: 10,
+        }}
+      >
+        Pickup location
+      </Text>
+      {/* <view> */}
+      <TextInput
+      onChangeText={(e) => setEnterPostcode(e)}
+        style={{
+          borderColor: "#182222ff",
+          borderWidth: 1,
+          width: "80%",
+          height: 50,
+          alignSelf: "center",
+          borderRadius: 10,
+          marginTop: 40,
+          backgroundColor: "white",
+          paddingLeft: 10,
+        }}
+        placeholder="Enter Postcode"
+      />
+      <TextInput
+      onChangeText={(e) => setLastName(e)}
+        style={{
+          borderColor: "#252b2cff",
+          borderWidth: 1,
+          width: "80%",
+          height: 50,
+          alignSelf: "center",
+          borderRadius: 10,
+          marginTop: 40,
+          backgroundColor: "white",
+          paddingLeft: 10,
+        }}
+        placeholder="Town"
+      />
+      <TextInput
+      onChangeText={(e) => setLastName(e)}
+        style={{
+          borderColor: "#121c1fff",
+          borderWidth: 1,
+          width: "80%",
+          height: 50,
+          alignSelf: "center",
+          borderRadius: 10,
+          marginTop: 40,
+          backgroundColor: "white",
+          paddingLeft: 10,
+        }}
+        placeholder="Street"
+      />
+      {/* </view> */}
       <View>
         <Text
           style={{
@@ -179,7 +215,7 @@ const Register = ({ navigation }) => {
           Next
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 

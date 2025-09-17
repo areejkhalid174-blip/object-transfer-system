@@ -1,11 +1,20 @@
-import React from "react";
-import { Text, TouchableOpacity, View, TextInput } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { useState } from "react";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const Register = ({ navigation }) => {
-  const goToNext = () => {
-    navigation.navigate("Package");
+const Register = ({ navigation, route }) => {
+  const id = route.params.id;
+  const [UserId, setUserId] = useState("");
+  const [OrderName, setOrderName] = useState("");
+  const [WeightByKg, setWeightByKg] = useState("");
+  const [Quantity, setQuantity] = useState("");
+
+  const goToContinue = () => {
+    console.log(UserId, OrderName, WeightByKg, Quantity);
+
+    navigation.navigate("PackageDetail", { OrderName, WeightByKg, Quantity, id });
   };
+
   return (
     <View>
       <Text
@@ -20,6 +29,7 @@ const Register = ({ navigation }) => {
       </Text>
 
       <TextInput
+        onChangeText={(e) => setUserId(e)}
         style={{
           borderColor: "#0e1314ff",
           borderWidth: 1,
@@ -31,9 +41,10 @@ const Register = ({ navigation }) => {
           backgroundColor: "white",
           paddingLeft: 10,
         }}
-        placeholder="User ID"
+        placeholder="UserId"
       />
       <TextInput
+        onChangeText={(e) => setOrderName(e)}
         style={{
           borderColor: "#191c1dff",
           borderWidth: 1,
@@ -48,6 +59,7 @@ const Register = ({ navigation }) => {
         placeholder="Order Name"
       />
       <TextInput
+        onChangeText={(e) => setWeightByKg(e)}
         style={{
           borderColor: "#1f2527ff",
           borderWidth: 1,
@@ -62,6 +74,7 @@ const Register = ({ navigation }) => {
         placeholder="Weight By Kg"
       />
       <TextInput
+        onChangeText={(e) => setQuantity(e)}
         style={{
           borderColor: "#0b1113ff",
           borderWidth: 1,
@@ -89,7 +102,7 @@ const Register = ({ navigation }) => {
       </View>
       <AntDesign name="checkcircle" size={24} color="#131414ff" />
       <TouchableOpacity
-        onPress={goToNext}
+        onPress={goToContinue}
         style={{
           width: "50%",
           height: 50,

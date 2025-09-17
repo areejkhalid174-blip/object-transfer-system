@@ -1,13 +1,11 @@
-import React from "react";
 import {
-  Text,
-  TouchableOpacity,
-  View,
-  TextInput,
   flex,
   Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import AntDesign from "@expo/vector-icons/AntDesign";
 
 const Picture2 = ({ navigation }) => {
   const goToNext = () => {
@@ -19,7 +17,7 @@ const Picture2 = ({ navigation }) => {
       <View style={{ flex: 1, display: flex }}>
         <View>
            <TouchableOpacity
-          onPress={goToPackage}
+          onPress={()=>{}}
           style={{
             width: "50%",
             height: 50,

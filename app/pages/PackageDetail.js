@@ -1,10 +1,16 @@
-import React from "react";
-import { Text, TouchableOpacity, View, TextInput } from "react-native";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { useState } from "react";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const PackageDetail = ({ navigation }) => {
+const PackageDetail = ({ navigation , route }) => {
+
+  const {OrderName, WeightByKg, Quantity, id} = route.params
+
+  const [packageDetail , setPackageDetail] = useState("");
+  const [addDetail , setAddDetail] = useState("")
+
+  // const id = route.params.id 
   const goToNext = () => {
-    navigation.navigate("Picture1");
+    navigation.navigate("Payment" , {OrderName, WeightByKg, Quantity, id, packageDetail, addDetail});
   };
 
   return (

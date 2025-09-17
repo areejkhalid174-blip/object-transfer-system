@@ -1,15 +1,14 @@
-import React from "react";
+import Feather from '@expo/vector-icons/Feather';
 import {
-  Text,
-  TouchableOpacity,
-  View,
-  TextInput,
   flex,
   Image,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
-import Feather from '@expo/vector-icons/Feather';
 
-const Picture1 = ({ navigation }) => {
+const Picture1 = ({ navigation , route }) => {
+  
   const goToNext = () => {
     navigation.navigate("Picture2");
   };
@@ -19,7 +18,7 @@ const Picture1 = ({ navigation }) => {
       <View style={{ flex: 1, display: flex }}>
         <View>
            <TouchableOpacity
-          onPress={goToPicture2}
+          onPress={()=>{}}
           style={{
             width: "50%",
             height: 50,
