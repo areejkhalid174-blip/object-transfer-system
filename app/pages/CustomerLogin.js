@@ -1,16 +1,24 @@
-import { useState } from "react";
-import React from "react";
-import { Text, TouchableOpacity, View, TextInput } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { useState } from "react";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useDispatch } from "react-redux";
+import { loginWithFB } from "../Helper/firebaseHelper";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
+
+
 
 const CustomerLogin = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("areeej786@gmail.com");
+  const [password, setPassword] = useState("areeej1122");
 
-  const goToContinue = () => {
-    console.log(email, password);
+  const dispatch = useDispatch()
 
-    navigation.navigate("RiderHome");
+  const goToContinue = async () => {
+      const user = await loginWithFB(email, password)
+
+      dispatch(setUser(user))
+      dispatch(setRole("Customer"))
+
   };
   return (
     <View>
@@ -26,6 +34,7 @@ const CustomerLogin = ({ navigation }) => {
       </Text>
 
       <TextInput
+        value={email}
         onChangeText={(e) => setEmail(e)}
         style={{
           borderColor: "#171a1bff",
@@ -41,6 +50,7 @@ const CustomerLogin = ({ navigation }) => {
         placeholder="Email"
       />
       <TextInput
+        value={password}
         onChangeText={(e) => setPassword(e)}
         style={{
           borderColor: "#0b0b0cff",

@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native";
-import { Provider } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 // Rider
 import HomeRider from "./pages/HomeRider";
@@ -15,7 +15,6 @@ import RiderVerification from "./pages/RiderVerification";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
 import VehicelInformationr from "./pages/VehicelInformationr";
-import select from "./pages/select";
 
 // Customer
 // import CustomerChat from "./pages/CustomerChat";
@@ -31,6 +30,10 @@ import RatingCustomer from "./pages/RatingCustomer";
 import SelectDate from "./pages/SelectDate";
 import Vehicle from "./pages/Vehicle";
 
+
+
+
+import VehicleSelection from "./pages/Vehicle";
 import { persistor, store } from "./redux/store";
 
 const Stack = createNativeStackNavigator();
@@ -63,6 +66,7 @@ const CustomerStack = () => (
     <Stack.Screen name="SelectDate" component={SelectDate} />
     <Stack.Screen name="Vehicle" component={Vehicle} />
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />
+    <Stack.Screen name="VehicleSelection" component={VehicleSelection} />
     {/* <Stack.Screen name="select" component={select} /> */}
 
   </Stack.Navigator>
@@ -81,17 +85,14 @@ const App = () => {
         return <RiderStack />;
       default:
         return (
-          <Stack.Navigator initialRouteName="PackageDetail">
+          <Stack.Navigator initialRouteName="CusromerLogin">
             <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
 
-            <Stack.Screen name="select" component={select} />
-            <Stack.Screen name="CustomerHome" component={CustomerHome} />
-            <Stack.Screen name="PackageDetail" component={PackageDetail} />
-            <Stack.Screen name="Order" component={Order} />
+         
 
-            <Stack.Screen name="select" component={select} />
+            
  
           </Stack.Navigator>
         );

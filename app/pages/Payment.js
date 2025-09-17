@@ -1,4 +1,5 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { useState } from "react";
 import {
   ScrollView,
   Text,
@@ -9,7 +10,7 @@ import {
 import { addData } from "../Helper/firebaseHelper";
 
 const Register = ({ navigation, route }) => {
-  const id = route.params.id;
+  const {id, OrderName, WeightByKg, Quantity, packageDetail, addDetail} = route.params;
   const [EnterPostcode, setEnterPostcode] = useState("");
   const [Town, setTown] = useState("");
   const [Street, setStreet] = useState("");
@@ -33,6 +34,8 @@ const Register = ({ navigation, route }) => {
       packageDetail,
       addDetail,
     });
+
+    navigation.navigate("CustomerHome");
   };
   return (
     <ScrollView>

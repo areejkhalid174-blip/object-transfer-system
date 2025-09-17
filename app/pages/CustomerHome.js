@@ -25,6 +25,11 @@ export default function CustomerHome({navigation}) {
   }, []);
 
 
+  const logOut = () =>{
+    
+  }
+
+
 
   return (
     <View style={styles.container}>

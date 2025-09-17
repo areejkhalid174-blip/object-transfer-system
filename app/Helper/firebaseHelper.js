@@ -1,19 +1,19 @@
 // firestoreService.js
 import {
-    createUserWithEmailAndPassword,
-    sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signOut,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDoc,
-    getDocs,
-    setDoc,
-    updateDoc,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../firebase"; // make sure you export both db and auth in firebase.js
 
@@ -118,7 +118,7 @@ export const handleSignUp = async (email, password, extraData = {}) => {
 };
 
 // ✅ Login
-export const login = async (email, password) => {
+export const loginWithFB = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(
       auth,

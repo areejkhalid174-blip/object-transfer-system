@@ -3,7 +3,7 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const PackageDetail = ({ navigation , route }) => {
 
-  const {OrderName, WeightByKg, Quantity, id} = route.params
+  const {OrderName, WeightByKg, Quantity, id} = route?.params|| ""
 
   const [packageDetail , setPackageDetail] = useState("");
   const [addDetail , setAddDetail] = useState("")
