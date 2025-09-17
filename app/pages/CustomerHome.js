@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -22,6 +23,8 @@ export default function CustomerHome({navigation}) {
   useEffect(() => {
     getCatData();
   }, []);
+
+
 
   return (
     <View style={styles.container}>
@@ -55,6 +58,12 @@ export default function CustomerHome({navigation}) {
           </TouchableOpacity>
         ))}
       </View>
+
+      <TouchableOpacity onPress={logOut}>
+        <Text style={{ textAlign: "center", color: "#1c1b1fff", marginTop: 20 }}>
+          log OUT
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -84,4 +93,4 @@ const styles = StyleSheet.create({
     borderColor: "#4A90E2",
   },
   cardText: { fontSize: 16, fontWeight: "600", marginTop: 8, color: "black" },
-});
+})

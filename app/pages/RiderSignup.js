@@ -85,6 +85,22 @@ const RiderSignup = ({ navigation }) => {
           }}
           placeholder="Last Name"
         />
+
+          <TextInput
+          onChangeText={(e) => setEmail(e)}
+          style={{
+            borderColor: "#111113ff",
+            borderWidth: 1,
+            width: "80%",
+            height: 50,
+            alignSelf: "center",
+            borderRadius: 10,
+            marginTop: 40,
+            backgroundColor: "white",
+            paddingLeft: 10,
+          }}
+          placeholder="Email"
+        />
         <TextInput
           onChangeText={(e) => setPassword(e)}
           style={{
@@ -100,21 +116,7 @@ const RiderSignup = ({ navigation }) => {
           }}
           placeholder="password"
         />
-        <TextInput
-          onChangeText={(e) => setEmail(e)}
-          style={{
-            borderColor: "#111113ff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="Email"
-        />
+      
         <View>
           <Text
             style={{

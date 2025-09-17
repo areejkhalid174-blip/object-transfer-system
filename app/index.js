@@ -63,16 +63,17 @@ const CustomerStack = () => (
     <Stack.Screen name="SelectDate" component={SelectDate} />
     <Stack.Screen name="Vehicle" component={Vehicle} />
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />
-    <Stack.Screen name="select" component={select} />
+    {/* <Stack.Screen name="select" component={select} /> */}
+
   </Stack.Navigator>
 );
 
 const App = () => {
   // Choose stack based on role
   const RenderStack = () => {
-    // const userRole = useSelector((state) => state.home.role);
-    const userRole = "Customer"
-    // alert(userRole);
+    const userRole = useSelector((state) => state.home.role);
+    // alert(userRole)
+
     switch (userRole) {
       case "Customer":
         return <CustomerStack />;
@@ -84,10 +85,15 @@ const App = () => {
             <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
+
             <Stack.Screen name="select" component={select} />
             <Stack.Screen name="CustomerHome" component={CustomerHome} />
             <Stack.Screen name="PackageDetail" component={PackageDetail} />
             <Stack.Screen name="Order" component={Order} />
+
+            {/* <Stack.Screen name="RiderLogin" component={RiderLogin} /> */}
+            <Stack.Screen name="select" component={select} />
+ 
           </Stack.Navigator>
         );
     }
