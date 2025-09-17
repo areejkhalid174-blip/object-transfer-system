@@ -91,7 +91,6 @@ const App = () => {
             <Stack.Screen name="PackageDetail" component={PackageDetail} />
             <Stack.Screen name="Order" component={Order} />
 
-            {/* <Stack.Screen name="RiderLogin" component={RiderLogin} /> */}
             <Stack.Screen name="select" component={select} />
  
           </Stack.Navigator>
