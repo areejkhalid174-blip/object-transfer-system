@@ -1,12 +1,23 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 
-export default function SupportingDocuments() {
+export default function SupportingDocuments({ navigation }) {
   const [license, setLicense] = useState("");
+
+  const goToNext = () => {
+    console.log("License:", license);
+    navigation.navigate("RiderVerification"); // ✅ Navigate to Setting page
+  };
 
   return (
     <ScrollView style={styles.container}>
-      
       {/* Title */}
       <Text style={styles.title}>Supporting Documents</Text>
 
@@ -54,11 +65,10 @@ export default function SupportingDocuments() {
         </TouchableOpacity>
       </View>
 
-      {/* Button */}
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Request for verification</Text>
+      {/* Go to Setting Page Button */}
+      <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={goToNext}>
+        <Text style={styles.buttonText}>Go to RiderVerification</Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 }
@@ -67,10 +77,35 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 20, fontWeight: "700", marginBottom: 20 },
   subtitle: { fontSize: 16, fontWeight: "600", marginTop: 10, marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, padding: 12, marginBottom: 15 },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
-  uploadBox: { flex: 1, height: 100, borderWidth: 1, borderColor: "#aaa", borderRadius: 8, alignItems: "center", justifyContent: "center", marginHorizontal: 5 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+  uploadBox: {
+    flex: 1,
+    height: 100,
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 5,
+  },
   plus: { fontSize: 30, fontWeight: "bold", marginBottom: 5 },
-  button: { backgroundColor: "black", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginTop: 20 },
+  button: {
+    backgroundColor: "black",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
   buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
 });

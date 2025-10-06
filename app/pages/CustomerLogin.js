@@ -5,20 +5,17 @@ import { useDispatch } from "react-redux";
 import { loginWithFB } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
-
-
 const CustomerLogin = ({ navigation }) => {
   const [email, setEmail] = useState("areeej786@gmail.com");
   const [password, setPassword] = useState("areeej1122");
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const goToContinue = async () => {
-      const user = await loginWithFB(email, password)
+    const user = await loginWithFB(email, password);
 
-      dispatch(setUser(user))
-      dispatch(setRole("Customer"))
-
+    dispatch(setUser(user));
+    dispatch(setRole(user.role ));
   };
   return (
     <View>
@@ -101,7 +98,7 @@ const CustomerLogin = ({ navigation }) => {
         </Text>
       </TouchableOpacity>
       <View>
-        <TouchableOpacity onPress={()=>navigation.navigate("CustomerSignup")}>
+        <TouchableOpacity onPress={() => navigation.navigate("Select")}>
           <Text
             style={{
               fontSize: 25,

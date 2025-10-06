@@ -4,15 +4,16 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const Register = ({ navigation, route }) => {
   const id = route.params.id;
-  const [UserId, setUserId] = useState("");
   const [OrderName, setOrderName] = useState("");
   const [WeightByKg, setWeightByKg] = useState("");
   const [Quantity, setQuantity] = useState("");
+ const [PackageDetail , setPackageDetail] = useState("");
+  const [AddDetail , setAddDetail] = useState("")
 
   const goToContinue = () => {
-    console.log(UserId, OrderName, WeightByKg, Quantity);
+    console.log( OrderName, WeightByKg, Quantity,PackageDetail, AddDetail);
 
-    navigation.navigate("PackageDetail", { OrderName, WeightByKg, Quantity, id });
+    navigation.navigate("Payment", { OrderName, WeightByKg, Quantity,PackageDetail, AddDetail});
   };
 
   return (
@@ -27,22 +28,6 @@ const Register = ({ navigation, route }) => {
       >
         Order detail
       </Text>
-
-      <TextInput
-        onChangeText={(e) => setUserId(e)}
-        style={{
-          borderColor: "#0e1314ff",
-          borderWidth: 1,
-          width: "80%",
-          height: 50,
-          alignSelf: "center",
-          borderRadius: 10,
-          marginTop: 40,
-          backgroundColor: "white",
-          paddingLeft: 10,
-        }}
-        placeholder="UserId"
-      />
       <TextInput
         onChangeText={(e) => setOrderName(e)}
         style={{
@@ -87,6 +72,37 @@ const Register = ({ navigation, route }) => {
           paddingLeft: 10,
         }}
         placeholder="Quantity"
+        />
+        
+        <TextInput
+         onChangeText={(e) => setPackageDetail(e)}
+        style={{
+          borderColor: "#0a0c0cff",
+          borderWidth: 1,
+          width: "80%",
+          height: 50,
+          alignSelf: "center",
+          borderRadius: 10,
+          marginTop: 40,
+          backgroundColor: "white",
+          paddingLeft: 10,
+        }}
+        placeholder="What is in the Package ?"
+      />
+      <TextInput
+       onChangeText={(e) => setAddDetail(e)}
+        style={{
+          borderColor: "#0e0f0fff",
+          borderWidth: 1,
+          width: "80%",
+          height: 150,
+          alignSelf: "center",
+          borderRadius: 10,
+          marginTop: 40,
+          backgroundColor: "white",
+          paddingLeft: 10,
+        }}
+        placeholder="Additional Note (optional)"
       />
       <View>
         <Text

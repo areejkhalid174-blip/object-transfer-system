@@ -1,22 +1,34 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
+import { getAllData } from "../Helper/firebaseHelper";
 
 export default function VehicleSelection() {
   const [selected, setSelected] = useState(null);
+const [data, setData] = useState([]);
+  // const vehicles = [
+  //   { id: 1, name: "Bicycle Delivery", price: "1k.00", time: "60 mins to deliver", icon: "bicycle" },
+  //   { id: 2, name: "Motorbike Delivery", price: "2k.00", time: "50 mins to deliver", icon: "motorcycle" },
+  //   { id: 3, name: "Car Delivery", price: "3k.00", time: "40 mins to deliver", icon: "car" },
+  //   { id: 4, name: "Car-van Delivery", price: "6k.00", : "time 30 mins to deliver", icon: "shuttle-van" },
+  // ];
+const getCatData = async () => {
+    const cDAta = await getAllData("Vehicle");
+    setData(cDAta);
+  };
 
-  const vehicles = [
-    { id: 1, name: "Bicycle Delivery", price: "1k.00", time: "60 mins to deliver", icon: "bicycle" },
-    { id: 2, name: "Motorbike Delivery", price: "2k.00", time: "50 mins to deliver", icon: "motorcycle" },
-    { id: 3, name: "Car Delivery", price: "3k.00", time: "40 mins to deliver", icon: "car" },
-    { id: 4, name: "Car-van Delivery", price: "6k.00", time: "30 mins to deliver", icon: "shuttle-van" },
-  ];
+  useEffect(() => {
+    getCatData();
+  }, []);
 
+  const logOut = () =>{
+    
+  }
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>Select a Vehicle Type</Text>
 
-      {vehicles.map((item) => (
+      {data.map((item) => (
         <TouchableOpacity
           key={item.id}
           style={[styles.card, selected === item.id && styles.selectedCard]}

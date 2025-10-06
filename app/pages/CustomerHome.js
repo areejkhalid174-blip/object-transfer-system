@@ -7,7 +7,7 @@ import { getAllData } from "../Helper/firebaseHelper";
 
 export default function CustomerHome({navigation}) {
   const [selected, setSelected] = useState(null); // state for selected option
-  const [data, setData] = useState([]);
+  
   // const options = [
   //   { id: 1, title: "Food Delivery", icon: "fast-food-outline" },
   //   { id: 2, title: "Parcel", icon: "cube-outline" },
@@ -24,12 +24,9 @@ export default function CustomerHome({navigation}) {
     getCatData();
   }, []);
 
-
   const logOut = () =>{
     
   }
-
-
 
   return (
     <View style={styles.container}>
@@ -64,11 +61,11 @@ export default function CustomerHome({navigation}) {
         ))}
       </View>
 
-      <TouchableOpacity onPress={logOut}>
+      {/* <TouchableOpacity onPress={logOut}>
         <Text style={{ textAlign: "center", color: "#1c1b1fff", marginTop: 20 }}>
           log OUT
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Switch, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 
-export default function Setting() {
+export default function Setting({ navigation }) {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [locationAccess, setLocationAccess] = useState(true);
@@ -53,6 +53,15 @@ export default function Setting() {
         <Text style={styles.optionText}>Delete Account</Text>
       </TouchableOpacity>
 
+      {/* Rider History Button */}
+      <TouchableOpacity
+        style={styles.historyBtn}
+        onPress={() => navigation.navigate("RiderHistory")}
+      >
+        <Text style={styles.historyText}>Go to Rider History</Text>
+      </TouchableOpacity>
+
+      {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -74,11 +83,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
+  historyBtn: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  historyText: { color: "white", fontSize: 16, fontWeight: "bold" },
   logoutBtn: {
     backgroundColor: "black",
     padding: 15,
     borderRadius: 8,
-    marginTop: 30,
+    marginTop: 20,
     alignItems: "center",
   },
   logoutText: { color: "white", fontSize: 16, fontWeight: "bold" },

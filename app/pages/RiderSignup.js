@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import AntDesign from "@expo/vector-icons/AntDesign";
 import {
   ScrollView,
@@ -7,7 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+//   Image,
 } from "react-native";
+// import * as ImagePicker from "expo-image-picker";
 import { useDispatch } from "react-redux";
 import { handleSignUp } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
@@ -17,13 +18,35 @@ const RiderSignup = ({ navigation }) => {
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const dispatch = useDispatch()
+  const [phone, setPhone] = useState("");
+  const [cnic, setCnic] = useState("");
+  const [cnicFront, setCnicFront] = useState(null);
+  const [cnicBack, setCnicBack] = useState(null);
+
+  const dispatch = useDispatch();
+
+  const pickImage = async (setImage) => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
 
   const goToRigester = async () => {
     const user = await handleSignUp(email, password, {
       role: "Rider",
       firstName,
       lastName,
+      phone,
+      cnic,
+      cnicFront,
+      cnicBack,
+      status: "pending",
+      earning: 0,
+      ratting: 0,
     });
 
     if (user?.uid) {
@@ -33,13 +56,6 @@ const RiderSignup = ({ navigation }) => {
       alert("Error in sign up");
     }
   };
-
-  // const goToRigester = () => {
-
-  //   console.log(firstName,lastName,password, email);
-
-  //   navigation.navigate("VerificationOtp");
-  // };
 
   return (
     <ScrollView style={{ Height: "100%" }}>
@@ -55,68 +71,75 @@ const RiderSignup = ({ navigation }) => {
         >
           Sign up
         </Text>
+
+        {/* First Name */}
         <TextInput
           onChangeText={(e) => setFirstName(e)}
-          style={{
-            borderColor: "#18181aff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
+          style={styles.input}
           placeholder="First Name"
         />
+
+        {/* Last Name */}
         <TextInput
           onChangeText={(e) => setLastName(e)}
-          style={{
-            borderColor: "#1a1a1dff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
+          style={styles.input}
           placeholder="Last Name"
         />
 
-          <TextInput
+        {/* Email */}
+        <TextInput
           onChangeText={(e) => setEmail(e)}
-          style={{
-            borderColor: "#111113ff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
+          style={styles.input}
           placeholder="Email"
         />
+
+        {/* Password */}
         <TextInput
           onChangeText={(e) => setPassword(e)}
-          style={{
-            borderColor: "#1c1b1fff",
-            borderWidth: 1,
-            width: "80%",
-            height: 50,
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-            backgroundColor: "white",
-            paddingLeft: 10,
-          }}
-          placeholder="password"
+          style={styles.input}
+          placeholder="Password"
+          secureTextEntry
         />
-      
+
+        {/* Phone Number */}
+        <TextInput
+          onChangeText={(e) => setPhone(e)}
+          style={styles.input}
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+        />
+
+        {/* CNIC */}
+        <TextInput
+          onChangeText={(e) => setCnic(e)}
+          style={styles.input}
+          placeholder="CNIC Number"
+          keyboardType="numeric"
+        />
+
+        {/* CNIC Front Upload */}
+        <TouchableOpacity
+          style={styles.uploadBtn}
+          onPress={() => pickImage(setCnicFront)}
+        >
+          <Text style={{ color: "white" }}>Upload CNIC Front</Text>
+        </TouchableOpacity>
+        {cnicFront && (
+          <Image source={{ uri: cnicFront }} style={styles.previewImg} />
+        )}
+
+        {/* CNIC Back Upload */}
+        <TouchableOpacity
+          style={styles.uploadBtn}
+          onPress={() => pickImage(setCnicBack)}
+        >
+          <Text style={{ color: "white" }}>Upload CNIC Back</Text>
+        </TouchableOpacity>
+        {cnicBack && (
+          <Image source={{ uri: cnicBack }} style={styles.previewImg} />
+        )}
+
+        {/* Terms */}
         <View>
           <Text
             style={{
@@ -130,31 +153,58 @@ const RiderSignup = ({ navigation }) => {
           </Text>
         </View>
         <AntDesign name="checkcircle" size={24} color="#161518ff" />
-        <TouchableOpacity
-          onPress={goToRigester}
-          style={{
-            width: "50%",
-            height: 50,
-            backgroundColor: "#0e0d0fff",
-            alignSelf: "center",
-            borderRadius: 10,
-            marginTop: 40,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 20,
-              color: "white",
-              textAlign: "center",
-              paddingTop: 10,
-            }}
-          >
-            Register
-          </Text>
+
+        {/* Register Button */}
+        <TouchableOpacity onPress={goToRigester} style={styles.registerBtn}>
+          <Text style={styles.registerText}>Register</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
+};
+
+const styles = {
+  input: {
+    borderColor: "#111",
+    borderWidth: 1,
+    width: "80%",
+    height: 50,
+    alignSelf: "center",
+    borderRadius: 10,
+    marginTop: 20,
+    backgroundColor: "white",
+    paddingLeft: 10,
+  },
+  uploadBtn: {
+    backgroundColor: "#0e0d0f",
+    padding: 12,
+    borderRadius: 8,
+    width: "60%",
+    alignSelf: "center",
+    marginTop: 15,
+    alignItems: "center",
+  },
+  previewImg: {
+    width: 120,
+    height: 70,
+    alignSelf: "center",
+    marginTop: 10,
+    borderRadius: 6,
+  },
+  registerBtn: {
+    width: "50%",
+    height: 50,
+    backgroundColor: "#0e0d0f",
+    alignSelf: "center",
+    borderRadius: 10,
+    marginTop: 30,
+    justifyContent: "center",
+  },
+  registerText: {
+    fontSize: 20,
+    color: "white",
+    textAlign: "center",
+  },
 };
 
 export default RiderSignup;

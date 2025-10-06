@@ -15,6 +15,8 @@ import RiderVerification from "./pages/RiderVerification";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
 import VehicelInformationr from "./pages/VehicelInformationr";
+import RatingRider from "./pages/RatingRider";
+import SetMode from "./pages/SetMode";
 
 // Customer
 // import CustomerChat from "./pages/CustomerChat";
@@ -22,17 +24,15 @@ import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
 import Order from "./pages/Order";
-import PackageDetail from "./pages/PackageDetail";
 import Payment from "./pages/Payment";
 import Picture1 from "./pages/Picture1";
 import Picture2 from "./pages/Picture2";
 import RatingCustomer from "./pages/RatingCustomer";
 import SelectDate from "./pages/SelectDate";
 import Vehicle from "./pages/Vehicle";
+import CustomerBookTrip from "./pages/CustomerBookTrip";
 
-
-
-
+import RoleSelection from "./pages/select";
 import VehicleSelection from "./pages/Vehicle";
 import { persistor, store } from "./redux/store";
 
@@ -49,6 +49,9 @@ const RiderStack = () => (
     <Stack.Screen name="RiderEarning" component={RiderEarning} />
     <Stack.Screen name="HomeRider" component={HomeRider} />
     <Stack.Screen name="Setting" component={Setting} />
+   <Stack.Screen name="RatingRider" component={RatingRider} />
+   <Stack.Screen name="SetMode" component={SetMode} />
+
   </Stack.Navigator>
 );
 
@@ -58,7 +61,6 @@ const CustomerStack = () => (
     {/* <Stack.Screen name="CustomerOtp" component={CustomerOtp} /> */}
     <Stack.Screen name="CustomerHome" component={CustomerHome} />
     <Stack.Screen name="Order" component={Order} />
-    <Stack.Screen name="PackageDetail" component={PackageDetail} />
     <Stack.Screen name="Picture1" component={Picture1} />
     <Stack.Screen name="Picture2" component={Picture2} />
     <Stack.Screen name="Payment" component={Payment} />
@@ -68,6 +70,7 @@ const CustomerStack = () => (
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />
     <Stack.Screen name="VehicleSelection" component={VehicleSelection} />
     {/* <Stack.Screen name="select" component={select} /> */}
+    <Stack.Screen name="CustomerBookTrip" component={CustomerBookTrip} />
 
   </Stack.Navigator>
 );
@@ -89,6 +92,7 @@ const App = () => {
             <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
+            <Stack.Screen name="Select" component={RoleSelection} />
 
          
 

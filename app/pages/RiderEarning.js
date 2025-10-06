@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // expo install @expo/vector-icons
 
-export default function IncomeHistory() {
+export default function IncomeHistory({ navigation }) {
   const deliveries = [
     { id: 1, title: "Delivery", price: "Rs 200", time: "12.18 pm" },
     { id: 2, title: "Delivery", price: "Rs 200", time: "1.10 pm" },
@@ -10,11 +10,9 @@ export default function IncomeHistory() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#eef0f5ff", padding: 15 }}>
+    <View style={{ flex: 1, backgroundColor: "#cbd1e0ff", padding: 15 }}>
       {/* Header */}
-      <View
-        style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}
-      >
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
         <Ionicons name="arrow-back" size={24} color="#000" />
         <Text style={{ fontSize: 18, fontWeight: "600", marginLeft: 15 }}>
           Income History
@@ -24,14 +22,7 @@ export default function IncomeHistory() {
       {/* Earnings Summary */}
       <View style={{ alignItems: "center", marginBottom: 20 }}>
         <Text style={{ fontSize: 14, color: "#080707ff" }}>Mon, Jan 14</Text>
-        <Text
-          style={{
-            fontSize: 26,
-            fontWeight: "700",
-            color: "#000",
-            marginTop: 4,
-          }}
-        >
+        <Text style={{ fontSize: 26, fontWeight: "700", color: "#000", marginTop: 4 }}>
           Rs 500
         </Text>
         <Text style={{ fontSize: 14, color: "#0f0f0fff" }}>Earnings</Text>
@@ -119,7 +110,26 @@ export default function IncomeHistory() {
             </View>
           </View>
         ))}
+
+        {/* Button to RatingRider Page */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("RatingRider")}
+        >
+          <Text style={styles.buttonText}>Go to Rating Rider</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: "black",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
+});
