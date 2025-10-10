@@ -35,7 +35,7 @@ const Mobile = ({ navigation }) => {
         <Text
           style={{
             fontSize: 20,
-            color: "black",
+            color: "#2c5aa0",
             textAlign: "center",
             paddingTop: 60,
           }}
@@ -56,7 +56,7 @@ const Mobile = ({ navigation }) => {
           >
             <Text
               style={{
-                borderColor: "black",
+                borderColor: "#2c5aa0",
                 borderWidth: 1,
                 width: "18%",
                 height: 60,
@@ -77,7 +77,7 @@ const Mobile = ({ navigation }) => {
              onChangeText={(e)=>setPhnNum(e) }
 
               style={{
-                borderColor: "black",
+                borderColor: "#2c5aa0",
                 borderWidth: 1,
                 width: 200,
                 height: 60,

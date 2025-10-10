@@ -101,11 +101,11 @@ const styles = StyleSheet.create({
   },
   plus: { fontSize: 30, fontWeight: "bold", marginBottom: 5 },
   button: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
-  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
+  buttonText: { color: "#000000", fontSize: 16, fontWeight: "600" },
 });

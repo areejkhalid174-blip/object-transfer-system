@@ -11,7 +11,7 @@ const Payment2 = ({ navigation }) => {
       <Text
         style={{
           fontSize: 20,
-          color: "black",
+          color: "#2c5aa0",
           textAlign: "center",
           paddingTop: 10,
         }}
@@ -79,7 +79,7 @@ const Payment2 = ({ navigation }) => {
         <Text
           style={{
             fontSize: 12,
-            color: "black",
+            color: "#2c5aa0",
             textAlign: "center",
             paddingTop: 20,
           }}

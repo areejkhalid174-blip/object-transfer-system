@@ -77,11 +77,11 @@ export default function RatingCustomer() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  title: { fontSize: 18, fontWeight: "700", marginBottom: 10 },
+  title: { fontSize: 18, fontWeight: "700", marginBottom: 10, color: "#000000" },
   starRow: { flexDirection: "row", justifyContent: "center", marginVertical: 10 },
   star: { fontSize: 32, marginHorizontal: 5 },
-  subTitle: { textAlign: "center", color: "#444", marginBottom: 20 },
-  question: { fontSize: 16, fontWeight: "500", marginBottom: 10 },
+  subTitle: { textAlign: "center", color: "#000000", marginBottom: 20 },
+  question: { fontSize: 16, fontWeight: "500", marginBottom: 10, color: "#000000" },
   issueContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 20 },
   issueButton: {
     borderWidth: 1,
@@ -91,14 +91,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     margin: 5,
   },
-  issueSelected: { backgroundColor: "black", borderColor: "black" },
-  issueText: { fontSize: 14, color: "#333" },
-  note: { textAlign: "center", color: "#888", marginBottom: 20 },
+  issueSelected: { backgroundColor: "#538cc6", borderColor: "#538cc6" },
+  issueText: { fontSize: 14, color: "#000000" },
+  note: { textAlign: "center", color: "#000000", marginBottom: 20 },
   submitButton: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
   },
-  submitText: { color: "white", fontSize: 16, fontWeight: "600" },
+  submitText: { color: "#000000", fontSize: 16, fontWeight: "600" },
 });

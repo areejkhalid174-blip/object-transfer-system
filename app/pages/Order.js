@@ -21,7 +21,7 @@ const Register = ({ navigation, route }) => {
       <Text
         style={{
           fontSize: 20,
-          color: "black",
+          color: "#2c5aa0",
           textAlign: "center",
           paddingTop: 10,
         }}
@@ -108,7 +108,7 @@ const Register = ({ navigation, route }) => {
         <Text
           style={{
             fontSize: 12,
-            color: "black",
+            color: "#2c5aa0",
             textAlign: "center",
             paddingTop: 20,
           }}
@@ -122,7 +122,7 @@ const Register = ({ navigation, route }) => {
         style={{
           width: "50%",
           height: 50,
-          backgroundColor: "#141616ff",
+          backgroundColor: "#FFFFFF",
           alignSelf: "center",
           borderRadius: 10,
           marginTop: 40,
@@ -131,7 +131,7 @@ const Register = ({ navigation, route }) => {
         <Text
           style={{
             fontSize: 20,
-            color: "white",
+            color: "#000000",
             textAlign: "center",
             paddingTop: 10,
           }}

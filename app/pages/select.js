@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import Colors from "../constants/colors";
 
 export default function RoleSelection({navigation}) {
 
@@ -17,7 +18,7 @@ export default function RoleSelection({navigation}) {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#F5F9FF",
+        backgroundColor: Colors.background,
         padding: 20,
       }}
     >
@@ -26,7 +27,7 @@ export default function RoleSelection({navigation}) {
           fontSize: 24,
           fontWeight: "bold",
           marginBottom: 40,
-          color: "#333",
+          color: Colors.textSecondary,
         }}
       >
         Select Your Role
@@ -36,15 +37,20 @@ export default function RoleSelection({navigation}) {
       <TouchableOpacity
         style={{
           width: "80%",
-          backgroundColor: "#18191aff",
+          backgroundColor: Colors.buttonPrimary,
           paddingVertical: 15,
           borderRadius: 10,
           alignItems: "center",
           marginBottom: 20,
+          shadowColor: Colors.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 4,
         }}
         onPress={handleSelectRole}
       >
-        <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>
+        <Text style={{ color: Colors.buttonText, fontSize: 18, fontWeight: "600" }}>
           Rider
         </Text>
       </TouchableOpacity>
@@ -53,14 +59,19 @@ export default function RoleSelection({navigation}) {
       <TouchableOpacity
         style={{
           width: "80%",
-          backgroundColor: "#0d0f0eff",
+          backgroundColor: Colors.buttonPrimary,
           paddingVertical: 15,
           borderRadius: 10,
           alignItems: "center",
+          shadowColor: Colors.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 4,
         }}
         onPress={handleSelectRole2}
       >
-        <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>
+        <Text style={{ color: Colors.buttonText, fontSize: 18, fontWeight: "600" }}>
           Customer
         </Text>
       </TouchableOpacity>

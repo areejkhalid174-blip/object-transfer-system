@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { getAllData } from "../Helper/firebaseHelper";
 
-export default function VehicleSelection() {
+export default function VehicleSelection({ navigation }) {
   const [selected, setSelected] = useState(null);
 const [data, setData] = useState([]);
   // const vehicles = [
@@ -28,14 +28,14 @@ const getCatData = async () => {
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>Select a Vehicle Type</Text>
 
-      {data.map((item) => (
+      {data && data.length > 0 ? data.map((item) => (
         <TouchableOpacity
           key={item.id}
           style={[styles.card, selected === item.id && styles.selectedCard]}
           onPress={() => setSelected(item.id)}
         >
           <View style={styles.iconWrapper}>
-            <Icon name={item.icon} size={30} color="black" />
+            <Icon name={item.icon} size={30} color="#2c5aa0" />
           </View>
           <View style={styles.info}>
             <Text style={styles.title}>{item.name}</Text>
@@ -46,29 +46,42 @@ const getCatData = async () => {
             {selected === item.id ? <View style={styles.selectedDot} /> : null}
           </View>
         </TouchableOpacity>
-      ))}
+      )) : (
+        <Text style={{textAlign: 'center', marginTop: 20, color: '#666'}}>
+          Loading vehicles...
+        </Text>
+      )}
+
+      {/* Chat Button */}
+      <TouchableOpacity 
+        style={styles.chatButton}
+        onPress={() => navigation.navigate("CustomerChat")}
+      >
+        <Icon name="comments" size={20} color="#000000" />
+        <Text style={styles.chatButtonText}>Chat with Rider</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 15 },
-  heading: { fontSize: 18, fontWeight: "bold", marginBottom: 15 },
+  container: { flex: 1, backgroundColor: "#538cc6", padding: 15 },
+  heading: { fontSize: 18, fontWeight: "bold", marginBottom: 15, color: "#FFFFFF" },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderWidth: 2,
+    borderColor: "#4a7ba7",
     borderRadius: 10,
     padding: 15,
     marginBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
   },
-  selectedCard: { borderColor: "black", backgroundColor: "#f0fff0" },
+  selectedCard: { borderColor: "#4a7ba7", backgroundColor: "#e8f2ff", borderWidth: 3 },
   iconWrapper: { marginRight: 15 },
   info: { flex: 1 },
   title: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
-  price: { fontSize: 14, fontWeight: "bold", color: "black" },
+  price: { fontSize: 14, fontWeight: "bold", color: "#2c5aa0" },
   time: { fontSize: 12, color: "gray" },
   radioCircle: {
     width: 20,
@@ -83,6 +96,27 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "black",
+    backgroundColor: "#4a7ba7",
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  chatButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000000",
+    marginLeft: 10,
   },
 });

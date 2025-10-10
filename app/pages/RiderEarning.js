@@ -10,10 +10,10 @@ export default function IncomeHistory({ navigation }) {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#cbd1e0ff", padding: 15 }}>
+    <View style={{ flex: 1, backgroundColor: "#538cc6", padding: 15 }}>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-        <Ionicons name="arrow-back" size={24} color="#000" />
+        <Ionicons name="arrow-back" size={24} color="#2c5aa0" />
         <Text style={{ fontSize: 18, fontWeight: "600", marginLeft: 15 }}>
           Income History
         </Text>
@@ -22,7 +22,7 @@ export default function IncomeHistory({ navigation }) {
       {/* Earnings Summary */}
       <View style={{ alignItems: "center", marginBottom: 20 }}>
         <Text style={{ fontSize: 14, color: "#080707ff" }}>Mon, Jan 14</Text>
-        <Text style={{ fontSize: 26, fontWeight: "700", color: "#000", marginTop: 4 }}>
+        <Text style={{ fontSize: 26, fontWeight: "700", color: "#2c5aa0", marginTop: 4 }}>
           Rs 500
         </Text>
         <Text style={{ fontSize: 14, color: "#0f0f0fff" }}>Earnings</Text>
@@ -97,9 +97,9 @@ export default function IncomeHistory({ navigation }) {
               borderBottomColor: "#0e0d0dff",
             }}
           >
-            <Text style={{ fontSize: 14, color: "#000" }}>{item.title}</Text>
+            <Text style={{ fontSize: 14, color: "#2c5aa0" }}>{item.title}</Text>
             <View>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#000" }}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#2c5aa0" }}>
                 {item.price}
               </Text>
               <Text
@@ -125,11 +125,11 @@ export default function IncomeHistory({ navigation }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
-  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
+  buttonText: { color: "#000000", fontSize: 16, fontWeight: "600" },
 });

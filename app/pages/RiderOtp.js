@@ -21,7 +21,7 @@ const RiderOtp = ({ navigation }) => {
           Verify your Phone Number
         </Text>
 
-        <Text style={{ color: "black", textAlign: "center" }}>
+        <Text style={{ color: "#2c5aa0", textAlign: "center" }}>
           Enter Your OTP here
         </Text>
 
@@ -134,7 +134,7 @@ const RiderOtp = ({ navigation }) => {
           style={{
             width: "90%",
             height: 60,
-            backgroundColor: "#131418ff",
+            backgroundColor: "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 70,
@@ -143,7 +143,7 @@ const RiderOtp = ({ navigation }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "white",
+              color: "#000000",
               textAlign: "center",
               paddingTop: 10,
             }}

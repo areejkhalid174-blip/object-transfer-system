@@ -70,7 +70,7 @@ export default function Setting({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 15 },
+  container: { flex: 1, backgroundColor: "#538cc6", padding: 15 },
   heading: { fontSize: 20, fontWeight: "bold", marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: "bold", marginVertical: 10, color: "gray" },
   option: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#eee" },
@@ -84,19 +84,19 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
   },
   historyBtn: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
     alignItems: "center",
   },
-  historyText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  historyText: { color: "#000000", fontSize: 16, fontWeight: "bold" },
   logoutBtn: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
     alignItems: "center",
   },
-  logoutText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  logoutText: { color: "#000000", fontSize: 16, fontWeight: "bold" },
 });

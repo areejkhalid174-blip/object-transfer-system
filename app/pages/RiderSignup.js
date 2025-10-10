@@ -6,9 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-//   Image,
+  Image,
 } from "react-native";
-// import * as ImagePicker from "expo-image-picker";
+import * as ImagePicker from "expo-image-picker";
 import { useDispatch } from "react-redux";
 import { handleSignUp } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
@@ -52,18 +52,19 @@ const RiderSignup = ({ navigation }) => {
     if (user?.uid) {
       dispatch(setRole("Rider"));
       dispatch(setUser(user));
+      navigation.navigate("RiderHome"); // Navigate to Rider Dashboard
     } else {
       alert("Error in sign up");
     }
   };
 
   return (
-    <ScrollView style={{ Height: "100%" }}>
+    <ScrollView style={{ Height: "100%", backgroundColor: "#538cc6" }}>
       <View style={{ flex: 1, display: "flex" }}>
         <Text
           style={{
             fontSize: 30,
-            color: "black",
+            color: "#000000",
             textAlign: "center",
             paddingTop: 10,
             fontWeight: 600,
@@ -119,10 +120,12 @@ const RiderSignup = ({ navigation }) => {
 
         {/* CNIC Front Upload */}
         <TouchableOpacity
+         onChangeText={(e) => setCnicFront(e)}
           style={styles.uploadBtn}
+         placeholder="CNIC Front Upload"
           onPress={() => pickImage(setCnicFront)}
         >
-          <Text style={{ color: "white" }}>Upload CNIC Front</Text>
+          <Text style={{ color: "black" }}>Upload CNIC Front</Text>
         </TouchableOpacity>
         {cnicFront && (
           <Image source={{ uri: cnicFront }} style={styles.previewImg} />
@@ -133,7 +136,7 @@ const RiderSignup = ({ navigation }) => {
           style={styles.uploadBtn}
           onPress={() => pickImage(setCnicBack)}
         >
-          <Text style={{ color: "white" }}>Upload CNIC Back</Text>
+          <Text style={{ color: "black" }}>Upload CNIC Back</Text>
         </TouchableOpacity>
         {cnicBack && (
           <Image source={{ uri: cnicBack }} style={styles.previewImg} />
@@ -144,7 +147,7 @@ const RiderSignup = ({ navigation }) => {
           <Text
             style={{
               fontSize: 12,
-              color: "black",
+              color: "#000000",
               textAlign: "center",
               paddingTop: 20,
             }}
@@ -176,7 +179,7 @@ const styles = {
     paddingLeft: 10,
   },
   uploadBtn: {
-    backgroundColor: "#0e0d0f",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 8,
     width: "60%",
@@ -194,7 +197,7 @@ const styles = {
   registerBtn: {
     width: "50%",
     height: 50,
-    backgroundColor: "#0e0d0f",
+    backgroundColor: "#FFFFFF",
     alignSelf: "center",
     borderRadius: 10,
     marginTop: 30,
@@ -202,7 +205,7 @@ const styles = {
   },
   registerText: {
     fontSize: 20,
-    color: "white",
+    color: "#000000",
     textAlign: "center",
   },
 };

@@ -5,30 +5,67 @@ import {
   View,
   TextInput,
   ScrollView,
+  Image,
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 const VehicelInformationr = ({ navigation }) => {
-  const [uploadVehicelImage, setUploadVehicelImage] = useState("");
+  const [vehicleImage, setVehicleImage] = useState(null);
   const [category, setCategory] = useState("");
   const [modelName, setModelName] = useState("");
   const [numberPlate, setNumberPlate] = useState("");
+  const [color, setColor] = useState("");
 
-  const goToNext = () => {
-    console.log(uploadVehicelImage, category, modelName, numberPlate);
-    navigation.navigate("SupportingDocuments"); // ✅ Next page navigation
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setVehicleImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSubmit = () => {
+    // Save vehicle details to Firebase for admin approval
+    console.log({
+      vehicleImage,
+      category,
+      modelName,
+      numberPlate,
+      color,
+    });
+    
+    alert("Vehicle details submitted for admin approval!");
+    navigation.navigate("SetMode"); // ✅ Next page navigation to step 3/3
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "#538cc6" }}>
       <View style={{ flex: 1 }}>
-        {/* Heading */}
+        {/* Header */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 20, paddingLeft: 20 }}>
+          <Ionicons name="arrow-back" size={24} color="#000000" onPress={() => navigation.goBack()} />
+          <Text
+            style={{
+              fontSize: 20,
+              color: "#000000",
+              textAlign: "center",
+              fontWeight: "600",
+              flex: 1,
+            }}
+          >
+            Verification- 2/3
+          </Text>
+        </View>
         <Text
           style={{
-            fontSize: 20,
-            color: "black",
+            fontSize: 18,
+            color: "#000000",
             textAlign: "center",
-            paddingTop: 20,
+            paddingTop: 10,
             fontWeight: "600",
           }}
         >
@@ -36,9 +73,8 @@ const VehicelInformationr = ({ navigation }) => {
         </Text>
 
         {/* Vehicle Image Upload */}
-        <TextInput
-          value={uploadVehicelImage}
-          onChangeText={(e) => setUploadVehicelImage(e)}
+        <TouchableOpacity
+          onPress={pickImage}
           style={{
             borderColor: "#121213ff",
             borderWidth: 1,
@@ -48,10 +84,20 @@ const VehicelInformationr = ({ navigation }) => {
             borderRadius: 10,
             marginTop: 40,
             backgroundColor: "white",
-            paddingLeft: 10,
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "hidden",
           }}
-          placeholder="Upload vehicle image (URL or text)"
-        />
+        >
+          {vehicleImage ? (
+            <Image source={{ uri: vehicleImage }} style={{ width: "100%", height: "100%" }} />
+          ) : (
+            <View style={{ alignItems: "center" }}>
+              <Ionicons name="camera" size={40} color="gray" />
+              <Text style={{ color: "#000000", marginTop: 10 }}>Upload Vehicle Image</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Category */}
         <TextInput
@@ -104,7 +150,26 @@ const VehicelInformationr = ({ navigation }) => {
             backgroundColor: "white",
             paddingLeft: 10,
           }}
-          placeholder="Number plate"
+          placeholder="Registration Number"
+          autoCapitalize="characters"
+        />
+
+        {/* Color */}
+        <TextInput
+          value={color}
+          onChangeText={(e) => setColor(e)}
+          style={{
+            borderColor: "#111",
+            borderWidth: 1,
+            width: "80%",
+            height: 50,
+            alignSelf: "center",
+            borderRadius: 10,
+            marginTop: 20,
+            backgroundColor: "white",
+            paddingLeft: 10,
+          }}
+          placeholder="Vehicle Color"
         />
 
         {/* Terms */}
@@ -113,7 +178,7 @@ const VehicelInformationr = ({ navigation }) => {
           <Text
             style={{
               fontSize: 12,
-              color: "black",
+              color: "#000000",
               textAlign: "center",
               marginTop: 5,
             }}
@@ -122,30 +187,43 @@ const VehicelInformationr = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* Next Button */}
+        {/* Submit Button */}
         <TouchableOpacity
-          onPress={goToNext}
+          onPress={handleSubmit}
           style={{
-            width: "50%",
+            width: "70%",
             height: 50,
-            backgroundColor: "#09090aff",
+            backgroundColor: "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
+            marginBottom: 20,
             justifyContent: "center",
           }}
         >
           <Text
             style={{
-              fontSize: 20,
-              color: "white",
+              fontSize: 18,
+              color: "#000000",
               textAlign: "center",
               fontWeight: "600",
             }}
           >
-            Next
+            Submit for Approval
           </Text>
         </TouchableOpacity>
+
+        <Text
+          style={{
+            fontSize: 12,
+            color: "#000000",
+            textAlign: "center",
+            paddingHorizontal: 20,
+            marginBottom: 30,
+          }}
+        >
+          Your vehicle details will be reviewed by admin. You will be notified once approved.
+        </Text>
       </View>
     </ScrollView>
   );

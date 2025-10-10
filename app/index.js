@@ -3,10 +3,9 @@ import { SafeAreaView } from "react-native";
 import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 // Rider
-import HomeRider from "./pages/HomeRider";
 import Mobile from "./pages/Mobile";
 import Payment2 from "./pages/Payment2";
-// import RiderChat from "./pages/RiderChat";
+import RiderChat from "./pages/RiderChat";
 import RiderEarning from "./pages/RiderEarning";
 import RiderHistory from "./pages/RiderHistory";
 import RiderOtp from "./pages/RiderOtp";
@@ -17,9 +16,11 @@ import SupportingDocuments from "./pages/SupportingDocuments";
 import VehicelInformationr from "./pages/VehicelInformationr";
 import RatingRider from "./pages/RatingRider";
 import SetMode from "./pages/SetMode";
+import RiderHome from "./pages/RiderHome";
+import TripDetails from "./pages/TripDetails";
 
 // Customer
-// import CustomerChat from "./pages/CustomerChat";
+import CustomerChat from "./pages/CustomerChat";
 import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
@@ -31,6 +32,7 @@ import RatingCustomer from "./pages/RatingCustomer";
 import SelectDate from "./pages/SelectDate";
 import Vehicle from "./pages/Vehicle";
 import CustomerBookTrip from "./pages/CustomerBookTrip";
+import SplashScreen from "./pages/SplashScreen";
 
 import RoleSelection from "./pages/select";
 import VehicleSelection from "./pages/Vehicle";
@@ -39,7 +41,9 @@ import { persistor, store } from "./redux/store";
 const Stack = createNativeStackNavigator();
 
 const RiderStack = () => (
-  <Stack.Navigator initialRouteName="HomeRider">
+  <Stack.Navigator initialRouteName="RiderHome" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
+    <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
     <Stack.Screen name="Mobile" component={Mobile} />
     <Stack.Screen name="RiderOtp" component={RiderOtp} />
     <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} />
@@ -47,16 +51,18 @@ const RiderStack = () => (
     <Stack.Screen name="SupportingDocuments" component={SupportingDocuments} />
     <Stack.Screen name="RiderHistory" component={RiderHistory} />
     <Stack.Screen name="RiderEarning" component={RiderEarning} />
-    <Stack.Screen name="HomeRider" component={HomeRider} />
     <Stack.Screen name="Setting" component={Setting} />
    <Stack.Screen name="RatingRider" component={RatingRider} />
    <Stack.Screen name="SetMode" component={SetMode} />
+   <Stack.Screen name="TripDetails" component={TripDetails} />
+   <Stack.Screen name="RiderChat" component={RiderChat} />
 
   </Stack.Navigator>
 );
 
 const CustomerStack = () => (
-  <Stack.Navigator initialRouteName="CustomerHome">
+  <Stack.Navigator initialRouteName="CustomerHome" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
+    <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
     {/* <Stack.Screen name="Mobile" component={Mobile} /> */}
     {/* <Stack.Screen name="CustomerOtp" component={CustomerOtp} /> */}
     <Stack.Screen name="CustomerHome" component={CustomerHome} />
@@ -71,6 +77,7 @@ const CustomerStack = () => (
     <Stack.Screen name="VehicleSelection" component={VehicleSelection} />
     {/* <Stack.Screen name="select" component={select} /> */}
     <Stack.Screen name="CustomerBookTrip" component={CustomerBookTrip} />
+    <Stack.Screen name="CustomerChat" component={CustomerChat} />
 
   </Stack.Navigator>
 );
@@ -88,23 +95,25 @@ const App = () => {
         return <RiderStack />;
       default:
         return (
-          <Stack.Navigator initialRouteName="CusromerLogin">
-            <Stack.Screen name="CusromerLogin" component={CustomerLogin} />
+          <Stack.Navigator initialRouteName="CustomerLogin" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
+            <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CustomerLogin" component={CustomerLogin} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
             <Stack.Screen name="Select" component={RoleSelection} />
-
-         
-
-            
- 
+            <Stack.Screen name="RiderVerification" component={RiderVerification} />
+            <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} />
+            <Stack.Screen name="SetMode" component={SetMode} />
+            <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
+            <Stack.Screen name="TripDetails" component={TripDetails} />
+            <Stack.Screen name="Setting" component={Setting} />
           </Stack.Navigator>
         );
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#538cc6" }}>
       <PersistGate loading={null} persistor={persistor}>
         <Provider store={store}>
           <RenderStack />

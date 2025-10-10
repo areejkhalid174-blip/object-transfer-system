@@ -24,10 +24,10 @@ export default function RiderHistory({ navigation }) {
 
   return (
     <ScrollView style={{ height: "100%" }}>
-      <View style={{ flex: 1, backgroundColor: "#fff", padding: 12 }}>
+      <View style={{ flex: 1, backgroundColor: "#538cc6", padding: 12 }}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#2c5aa0" />
           <Text style={{ fontSize: 30, fontWeight: "600", marginLeft: 100 }}>
             Rider History
           </Text>
@@ -44,10 +44,10 @@ export default function RiderHistory({ navigation }) {
             }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={{ fontSize: 16, color: "#000" }}>
-                <Entypo name="location-pin" size={24} color="black" /> {ride.location}
+              <Text style={{ fontSize: 16, color: "#2c5aa0" }}>
+                <Entypo name="location-pin" size={24} color="#2c5aa0" /> {ride.location}
               </Text>
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#000" }}>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#2c5aa0" }}>
                 {ride.price}
               </Text>
             </View>
@@ -59,7 +59,7 @@ export default function RiderHistory({ navigation }) {
                 marginLeft: 10,
               }}
             >
-              <FontAwesome5 name="search-location" size={20} color="black" /> {ride.place}
+              <FontAwesome5 name="search-location" size={20} color="#2c5aa0" /> {ride.place}
             </Text>
             <Text
               style={{
@@ -88,11 +88,11 @@ export default function RiderHistory({ navigation }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
-  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
+  buttonText: { color: "#000000", fontSize: 16, fontWeight: "600" },
 });

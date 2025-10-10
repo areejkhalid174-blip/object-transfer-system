@@ -28,7 +28,7 @@ const Picture1 = ({ navigation , route }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "black",
+              color: "#2c5aa0",
               paddingTop: 5
             }}
           >
@@ -80,7 +80,7 @@ const Picture1 = ({ navigation , route }) => {
           style={{
             width: "50%",
             height: 50,
-            backgroundColor: "#191b1bff",
+            backgroundColor: "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
@@ -89,12 +89,12 @@ const Picture1 = ({ navigation , route }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "white",
+              color: "#000000",
               textAlign: "center",
               paddingTop: 10,
             }}
           >
-            <Feather name="camera" size={24} color="black" />Take a picture
+            <Feather name="camera" size={24} color="#2c5aa0" />Take a picture
           </Text>
         </TouchableOpacity>
       </View>

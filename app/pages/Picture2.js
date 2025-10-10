@@ -27,7 +27,7 @@ const Picture2 = ({ navigation }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "black",
+              color: "#2c5aa0",
               paddingTop: 5
             }}
           >
@@ -94,7 +94,7 @@ const Picture2 = ({ navigation }) => {
           style={{
             width: "50%",
             height: 50,
-            backgroundColor: "#191b1bff",
+            backgroundColor: "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
@@ -103,7 +103,7 @@ const Picture2 = ({ navigation }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "white",
+              color: "#000000",
               textAlign: "center",
               paddingTop: 10,
             }}

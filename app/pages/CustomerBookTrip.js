@@ -6,7 +6,20 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+// Platform-specific import for maps
+import { Platform } from 'react-native';
+
+let MapView, Marker;
+
+if (Platform.OS === 'web') {
+  const WebMaps = require('../../components/WebMapView');
+  MapView = WebMaps.MapView;
+  Marker = WebMaps.Marker;
+} else {
+  const ReactNativeMaps = require('react-native-maps');
+  MapView = ReactNativeMaps.default;
+  Marker = ReactNativeMaps.Marker;
+}
 import * as Location from "expo-location";
 import { db } from "../../firebase"; // apna firebase config
 import { collection, addDoc } from "firebase/firestore";
@@ -17,7 +30,7 @@ export default function CustomerBookTrip({ navigation }) {
   const [drop, setDrop] = useState("");
   const [fare, setFare] = useState(null);
   const [coords, setCoords] = useState(null);
-  const customer = useSelector((state) => state.homeData.user); // logged in user
+  const customer = useSelector((state) => state.home?.user); // logged in user
 
   // Static Fare Calculation (you can integrate Google Maps API later)
   const calculateFare = () => {
@@ -135,21 +148,21 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   calcBtn: {
-    backgroundColor: "orange",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
     alignItems: "center",
   },
-  calcBtnText: { color: "white", fontWeight: "600" },
+  calcBtnText: { color: "#000000", fontWeight: "600" },
   fareText: { fontSize: 16, fontWeight: "600", marginBottom: 20 },
   bookBtn: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
   },
-  bookBtnText: { color: "white", fontSize: 16, fontWeight: "600" },
+  bookBtnText: { color: "#000000", fontSize: 16, fontWeight: "600" },
   mapContainer: {
     marginTop: 20,
     height: 250,

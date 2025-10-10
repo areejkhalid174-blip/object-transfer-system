@@ -21,7 +21,7 @@ const CustomerOtp = ({ navigation }) => {
           Verify your Phone Number
         </Text>
 
-        <Text style={{ color: "black", textAlign: "center" }}>
+        <Text style={{ color: "#2c5aa0", textAlign: "center" }}>
           Enter Your OTP here
         </Text>
 

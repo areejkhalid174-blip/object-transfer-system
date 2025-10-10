@@ -27,6 +27,7 @@ const SignUp = ({ navigation }) => {
     if (user?.uid) {
       dispatch(setRole("Customer"))
       dispatch(setUser(user))
+      navigation.navigate("SplashScreen", { userRole: "Customer" });
     } else {
       alert("Error in sign up")
     }
@@ -36,12 +37,12 @@ const SignUp = ({ navigation }) => {
 
 
   return (
-    <ScrollView style={{ Height: "100%" }}>
-      <View style={{ flex: 1, display: "flex" }}>
+    <ScrollView style={{ Height: "100%", backgroundColor: "#538cc6" }}>
+      <View style={{ flex: 1, display: "flex", backgroundColor: "#538cc6" }}>
         <Text
           style={{
             fontSize: 30,
-            color: "black",
+            color: "#FFFFFF",
             textAlign: "center",
             paddingTop: 10,
             fontWeight: 600,
@@ -114,7 +115,7 @@ const SignUp = ({ navigation }) => {
           <Text
             style={{
               fontSize: 12,
-              color: "black",
+              color: "#FFFFFF",
               textAlign: "center",
               paddingTop: 20,
             }}
@@ -128,7 +129,7 @@ const SignUp = ({ navigation }) => {
           style={{
             width: "50%",
             height: 50,
-            backgroundColor: "#0e0d0fff",
+            backgroundColor: "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
@@ -137,7 +138,7 @@ const SignUp = ({ navigation }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "white",
+              color: "#000000",
               textAlign: "center",
               paddingTop: 10,
             }}

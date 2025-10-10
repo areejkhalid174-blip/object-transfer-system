@@ -20,9 +20,10 @@ export default function SetMode({ navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-        <Text style={styles.headerText}>Register your driver mode as:</Text>
+        <Ionicons name="arrow-back" size={24} color="#000000" onPress={() => navigation.goBack()} />
+        <Text style={styles.headerText}>Verification- 3/3</Text>
       </View>
+      <Text style={styles.subHeaderText}>Register your driver mode as:</Text>
 
       {/* Mode Options */}
       <FlatList
@@ -47,21 +48,22 @@ export default function SetMode({ navigation }) {
         )}
       />
 
-      {/* Next Button */}
+      {/* Complete Button */}
       <TouchableOpacity
         style={styles.nextButton}
-        onPress={() => navigation.navigate("RatingRider")}
+        onPress={() => navigation.navigate("RiderHome")}
       >
-        <Text style={styles.nextText}>Next</Text>
+        <Text style={styles.nextText}>Complete</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  headerText: { fontSize: 16, fontWeight: "600", marginLeft: 10 },
+  container: { flex: 1, backgroundColor: "#538cc6", padding: 20 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  headerText: { fontSize: 16, fontWeight: "600", marginLeft: 10, color: "#000000" },
+  subHeaderText: { fontSize: 16, fontWeight: "600", marginBottom: 20, color: "#000" },
   option: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -74,11 +76,11 @@ const styles = StyleSheet.create({
   optionLeft: { flexDirection: "row", alignItems: "center" },
   optionText: { fontSize: 15, color: "#000" },
   nextButton: {
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 14,
     borderRadius: 8,
     marginTop: 20,
     alignItems: "center",
   },
-  nextText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  nextText: { color: "#000000", fontSize: 16, fontWeight: "600" },
 });

@@ -4,44 +4,62 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useDispatch } from "react-redux";
 import { loginWithFB } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
+import Colors from "../constants/colors";
 
 const CustomerLogin = ({ navigation }) => {
   const [email, setEmail] = useState("areeej786@gmail.com");
   const [password, setPassword] = useState("areeej1122");
+  const [loading, setLoading] = useState(false);
 
   const dispatch = useDispatch();
 
   const goToContinue = async () => {
-    const user = await loginWithFB(email, password);
-
-    dispatch(setUser(user));
-    dispatch(setRole(user.role ));
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      const user = await loginWithFB(email, password);
+      
+      if (user) {
+        dispatch(setUser(user));
+        dispatch(setRole(user.role));
+        
+        // Navigate to splash screen with user role
+        navigation.navigate("SplashScreen", { userRole: user.role });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
-    <View>
+    <View style={{ flex: 1, justifyContent: "center", padding: 20, backgroundColor: Colors.background }}>
       <Text
         style={{
           fontSize: 20,
-          color: "black",
+          color: Colors.textSecondary,
           textAlign: "center",
           paddingTop: 10,
+          fontWeight: "bold",
         }}
       >
-        Create Account
+        Login
       </Text>
 
       <TextInput
         value={email}
         onChangeText={(e) => setEmail(e)}
         style={{
-          borderColor: "#171a1bff",
-          borderWidth: 1,
+          borderColor: Colors.inputBorder,
+          borderWidth: 2,
           width: "80%",
           height: 50,
           alignSelf: "center",
           borderRadius: 10,
           marginTop: 40,
-          backgroundColor: "white",
+          backgroundColor: Colors.inputBackground,
           paddingLeft: 10,
         }}
         placeholder="Email"
@@ -49,52 +67,54 @@ const CustomerLogin = ({ navigation }) => {
       <TextInput
         value={password}
         onChangeText={(e) => setPassword(e)}
+        secureTextEntry={true}
         style={{
-          borderColor: "#0b0b0cff",
-          borderWidth: 1,
+          borderColor: Colors.inputBorder,
+          borderWidth: 2,
           width: "80%",
           height: 50,
           alignSelf: "center",
           borderRadius: 10,
-          marginTop: 40,
-          backgroundColor: "white",
+          marginTop: 20,
+          backgroundColor: Colors.inputBackground,
           paddingLeft: 10,
         }}
         placeholder="Password"
       />
-      <View>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 20 }}>
+        <AntDesign name="checkcircle" size={24} color={Colors.textSecondary} />
         <Text
-          style={{
-            fontSize: 20,
-            color: "black",
-            textAlign: "center",
-            paddingTop: 20,
-          }}
+        style={{
+          fontSize: 16,
+          color: Colors.textSecondary,
+          marginLeft: 10,
+        }}
         >
           I accept the terms and privacy policy
         </Text>
       </View>
-      <AntDesign name="checkcircle" size={24} color="#131314ff" />
       <TouchableOpacity
         onPress={goToContinue}
         style={{
           width: "50%",
           height: 50,
-          backgroundColor: "#161618ff",
+          backgroundColor: "#FFFFFF",
           alignSelf: "center",
           borderRadius: 10,
           marginTop: 40,
+          borderWidth: 2,
+          borderColor: Colors.buttonPrimary,
         }}
       >
         <Text
           style={{
             fontSize: 20,
-            color: "white",
+            color: Colors.buttonText,
             textAlign: "center",
             paddingTop: 10,
           }}
         >
-          Continue
+          {loading ? "Logging in..." : "Continue"}
         </Text>
       </TouchableOpacity>
       <View>
@@ -102,9 +122,10 @@ const CustomerLogin = ({ navigation }) => {
           <Text
             style={{
               fontSize: 25,
-              color: "black",
+              color: Colors.textSecondary,
               textAlign: "center",
               paddingTop: 50,
+              fontWeight: "bold",
             }}
           >
             don't have an account "SignUp"
