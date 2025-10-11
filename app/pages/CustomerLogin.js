@@ -132,6 +132,30 @@ const CustomerLogin = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Admin Login Button */}
+      <TouchableOpacity 
+        onPress={() => {
+          console.log("Admin Login button pressed");
+          try {
+            navigation.navigate("AdminLogin");
+          } catch (error) {
+            console.error("Navigation error:", error);
+            alert("Navigation error: " + error.message);
+          }
+        }}
+        style={{
+          marginTop: 30,
+          padding: 15,
+          backgroundColor: "#2c5aa0",
+          borderRadius: 10,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+          🔐 Admin Login
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };

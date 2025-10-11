@@ -90,6 +90,9 @@ export const deleteData = async (collectionName, id) => {
 // ✅ Sign Up
 export const handleSignUp = async (email, password, extraData = {}) => {
   try {
+    console.log("Starting signup process...");
+    console.log("Email:", email);
+    
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
@@ -97,7 +100,7 @@ export const handleSignUp = async (email, password, extraData = {}) => {
     );
     const user = userCredential.user;
 
-    console.log(user);
+    console.log("User created successfully:", user.uid);
 
     const userData = {
       uid: user.uid,
@@ -106,14 +109,35 @@ export const handleSignUp = async (email, password, extraData = {}) => {
       ...extraData, // merge additional data (e.g. name, phone, etc.)
     };
 
+    console.log("Saving user data to Firestore...");
     await setDoc(doc(db, "users", user.uid), userData);
 
-    console.log(userData);
+    console.log("User data saved successfully:", userData);
 
-    return userData;
+    return { success: true, data: userData };
   } catch (error) {
-    console.error("Error signing up:", error.message);
-    throw error;
+    console.error("Error signing up:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    
+    // Handle specific Firebase Auth errors
+    let errorMessage = "An error occurred during sign up";
+    
+    if (error.code === "auth/email-already-in-use") {
+      errorMessage = "This email is already registered. Please login or use a different email.";
+    } else if (error.code === "auth/invalid-email") {
+      errorMessage = "Invalid email address format.";
+    } else if (error.code === "auth/weak-password") {
+      errorMessage = "Password is too weak. Please use at least 6 characters.";
+    } else if (error.code === "auth/network-request-failed") {
+      errorMessage = "Network error. Please check your internet connection.";
+    } else if (error.code === "auth/operation-not-allowed") {
+      errorMessage = "Email/password accounts are not enabled. Please contact support.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return { success: false, error: errorMessage };
   }
 };
 

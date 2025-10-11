@@ -1,17 +1,20 @@
 
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Switch } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Switch, Alert, TextInput } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Ionicons } from "@expo/vector-icons";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { getAllData } from "../Helper/firebaseHelper";
 import Colors from "../constants/colors";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation, CommonActions } from "@react-navigation/native";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
 
 // Dashboard Screen
-const DashboardScreen = ({navigation}) => {
+const DashboardScreen = () => {
+  const navigation = useNavigation();
   const [selected, setSelected] = useState(null); // state for selected option
   const [data, setData] = useState([]); // state for data
   const user = useSelector((state) => state.home?.user); // Get logged-in user
@@ -37,17 +40,24 @@ const DashboardScreen = ({navigation}) => {
   }
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Icon name="arrow-back" size={24} color="#FFFFFF" />
-        <Text style={styles.backText}>Back</Text>
-      </TouchableOpacity>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header with Notification Bell */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hi</Text>
+          <Text style={styles.name}>{user?.firstName || user?.displayName || "Guest"}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.notificationButton}
+          onPress={() => alert("Notifications")}
+        >
+          <Icon name="notifications-outline" size={28} color="#FFFFFF" />
+          <View style={styles.notificationBadge}>
+            <Text style={styles.notificationBadgeText}>3</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
       
-      <Text style={styles.greeting}>Hi</Text>
-      <Text style={styles.name}>{user?.firstName || user?.displayName || "Guest"}</Text>
       <Text style={styles.subtitle}>What are you sending today?</Text>
 
       <View style={styles.grid}>
@@ -58,7 +68,35 @@ const DashboardScreen = ({navigation}) => {
               styles.card,
               selected === item.id && styles.selectedCard, // highlight if selected
             ]}
-            onPress={() => navigation.navigate("Order",{id:item.id})} // update state
+            onPress={() => {
+              console.log("Category clicked:", item.title);
+              console.log("Navigation object:", navigation);
+              
+              // Try multiple navigation methods
+              try {
+                // Method 1: Direct navigate
+                navigation.navigate("PackageDetail", {
+                  categoryId: item.id,
+                  categoryName: item.title
+                });
+              } catch (error1) {
+                console.error("Method 1 failed:", error1);
+                
+                try {
+                  // Method 2: Using parent navigator
+                  const parent = navigation.getParent();
+                  if (parent) {
+                    parent.navigate("PackageDetail", {
+                      categoryId: item.id,
+                      categoryName: item.title
+                    });
+                  }
+                } catch (error2) {
+                  console.error("Method 2 failed:", error2);
+                  Alert.alert("Navigation Error", "Cannot navigate to PackageDetail");
+                }
+              }
+            }} // Navigate to PackageDetail
           >
             <Icon
               name={item.icon}
@@ -81,10 +119,44 @@ const DashboardScreen = ({navigation}) => {
         )}
       </View>
 
+      {/* Send New Package Button */}
+      <TouchableOpacity 
+        style={styles.sendPackageButton}
+        onPress={() => {
+          console.log("Send New Package clicked");
+          try {
+            navigation.navigate("PackageDetail", {
+              categoryName: "General Package"
+            });
+          } catch (error) {
+            console.error("Navigation error:", error);
+          }
+        }}
+      >
+        <Icon name="cube-outline" size={24} color="#FFFFFF" />
+        <Text style={styles.sendPackageText}>Send New Package</Text>
+      </TouchableOpacity>
+
+      {/* Recent Orders / Track Packages */}
+      <TouchableOpacity 
+        style={styles.trackPackagesButton}
+        onPress={() => navigation.navigate("MyOrders")}
+      >
+        <Icon name="location-outline" size={24} color="#000000" />
+        <Text style={styles.trackPackagesText}>Track Packages</Text>
+      </TouchableOpacity>
+
       {/* Book a Trip Button */}
       <TouchableOpacity 
         style={styles.bookTripButton}
-        onPress={() => navigation.navigate("CustomerBookTrip")}
+        onPress={() => {
+          console.log("Book a Trip clicked");
+          try {
+            navigation.navigate("CustomerBookTrip");
+          } catch (error) {
+            console.error("Navigation error:", error);
+          }
+        }}
       >
         <Icon name="car-outline" size={24} color="#000000" />
         <Text style={styles.bookTripText}>Book a Trip</Text>
@@ -95,7 +167,7 @@ const DashboardScreen = ({navigation}) => {
           log OUT
         </Text>
       </TouchableOpacity> */}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -196,12 +268,24 @@ const ChatScreen = () => {
 
 // Profile Screen
 const ProfileScreen = ({ navigation }) => {
+  const user = useSelector((state) => state.home?.user);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user?.firstName || "");
+  const [editEmail, setEditEmail] = useState(user?.email || "");
+  const [editPhone, setEditPhone] = useState(user?.phone || "");
+
   const customerData = {
-    name: "Ahmed Khan",
-    email: "ahmed.customer@example.com",
-    phone: "+92 300 1234567",
+    name: user?.firstName ? `${user.firstName} ${user.lastName || ""}` : "Guest User",
+    email: user?.email || "Not provided",
+    phone: user?.phone || "Not provided",
     totalTrips: 45,
-    memberSince: "January 2024",
+    memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A",
+  };
+
+  const handleSaveProfile = () => {
+    // TODO: Update user profile in Firebase
+    Alert.alert("Success", "Profile updated successfully!");
+    setIsEditing(false);
   };
 
   return (
@@ -220,46 +304,119 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Personal Information</Text>
           
-          <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={20} color="#666" />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Full Name</Text>
-              <Text style={styles.infoValue}>{customerData.name}</Text>
-            </View>
-          </View>
+          {isEditing ? (
+            <>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Enter your name"
+                />
+              </View>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={20} color="#666" />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{customerData.email}</Text>
-            </View>
-          </View>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Email</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                  placeholder="Enter your email"
+                  keyboardType="email-address"
+                />
+              </View>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={20} color="#666" />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Phone Number</Text>
-              <Text style={styles.infoValue}>{customerData.phone}</Text>
-            </View>
-          </View>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Phone</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editPhone}
+                  onChangeText={setEditPhone}
+                  placeholder="Enter your phone"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.infoRow}>
+                <Ionicons name="person-outline" size={20} color="#666" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Full Name</Text>
+                  <Text style={styles.infoValue}>{customerData.name}</Text>
+                </View>
+              </View>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#666" />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Member Since</Text>
-              <Text style={styles.infoValue}>{customerData.memberSince}</Text>
-            </View>
-          </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="mail-outline" size={20} color="#666" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoValue}>{customerData.email}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="call-outline" size={20} color="#666" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Phone Number</Text>
+                  <Text style={styles.infoValue}>{customerData.phone}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="calendar-outline" size={20} color="#666" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Member Since</Text>
+                  <Text style={styles.infoValue}>{customerData.memberSince}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="cube-outline" size={20} color="#666" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Total Orders</Text>
+                  <Text style={styles.infoValue}>{customerData.totalTrips}</Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
-        <TouchableOpacity 
-          style={styles.editProfileButton}
-          onPress={() => alert("Edit Profile functionality coming soon!")}
-        >
-          <Ionicons name="create-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.editProfileButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
+        {isEditing ? (
+          <View style={styles.editButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.cancelEditButton}
+              onPress={() => setIsEditing(false)}
+            >
+              <Text style={styles.cancelEditButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.saveEditButton}
+              onPress={handleSaveProfile}
+            >
+              <Text style={styles.saveEditButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <TouchableOpacity 
+              style={styles.editProfileButton}
+              onPress={() => setIsEditing(true)}
+            >
+              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.orderHistoryButton}
+              onPress={() => navigation.navigate("MyOrders")}
+            >
+              <Ionicons name="time-outline" size={20} color="#2c5aa0" />
+              <Text style={styles.orderHistoryButtonText}>View Order History</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -267,23 +424,85 @@ const ProfileScreen = ({ navigation }) => {
 
 // Settings Screen
 const SettingsScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.home?.user);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: () => {
+            // Clear Redux state
+            dispatch(setRole(""));
+            dispatch(setUser({}));
+            // Navigate to login screen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "CustomerLogin" }],
+            });
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.pageTitle}>Settings</Text>
 
+        {/* Account Info Card */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Account</Text>
+          
+          <View style={styles.accountInfoRow}>
+            <Ionicons name="person-circle-outline" size={24} color="#2c5aa0" />
+            <View style={styles.accountInfoText}>
+              <Text style={styles.accountName}>
+                {user?.firstName ? `${user.firstName} ${user.lastName || ""}` : "Guest User"}
+              </Text>
+              <Text style={styles.accountEmail}>{user?.email || "Not logged in"}</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Account Settings</Text>
 
           <TouchableOpacity 
             style={styles.optionItem}
-            onPress={() => alert("Change Password functionality coming soon!")}
+            onPress={() => navigation.navigate("Profile")}
+          >
+            <Ionicons name="person-outline" size={22} color="#000" />
+            <Text style={styles.optionText}>Edit Profile</Text>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.optionItem}
+            onPress={() => Alert.alert("Change Password", "This feature will be available soon")}
           >
             <Ionicons name="key-outline" size={22} color="#000" />
             <Text style={styles.optionText}>Change Password</Text>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.optionItem}
+            onPress={() => navigation.navigate("MyOrders")}
+          >
+            <Ionicons name="receipt-outline" size={22} color="#000" />
+            <Text style={styles.optionText}>Order History</Text>
             <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
         </View>
@@ -324,7 +543,29 @@ const SettingsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Support</Text>
+
+          <TouchableOpacity 
+            style={styles.optionItem}
+            onPress={() => Alert.alert("Help Center", "Contact support at support@example.com")}
+          >
+            <Ionicons name="help-circle-outline" size={22} color="#000" />
+            <Text style={styles.optionText}>Help Center</Text>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.optionItem}
+            onPress={() => Alert.alert("About", "Object Transfer System v1.0.0")}
+          >
+            <Ionicons name="information-circle-outline" size={22} color="#000" />
+            <Text style={styles.optionText}>About</Text>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
@@ -384,20 +625,35 @@ export default function CustomerHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, padding: 20 },
-  backButton: {
+  container: { backgroundColor: Colors.background, padding: 20, paddingBottom: 30 },
+  header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
-  backText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginLeft: 8,
-    fontWeight: "500",
+  notificationButton: {
+    position: "relative",
+    padding: 8,
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notificationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
   greeting: { fontSize: 20, color: Colors.textSecondary },
-  name: { fontSize: 26, fontWeight: "700", marginBottom: 10, color: Colors.textSecondary },
+  name: { fontSize: 26, fontWeight: "700", color: Colors.textSecondary },
   subtitle: { fontSize: 16, fontWeight: "500", marginBottom: 20, color: Colors.textSecondary },
   grid: {
     flexDirection: "row",
@@ -425,6 +681,48 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   cardText: { fontSize: 16, fontWeight: "600", marginTop: 8, color: Colors.primaryDark },
+  sendPackageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2c5aa0",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  sendPackageText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginLeft: 10,
+  },
+  trackPackagesButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 2,
+    borderColor: "#2c5aa0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  trackPackagesText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2c5aa0",
+    marginLeft: 10,
+  },
   bookTripButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -432,7 +730,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.buttonPrimary,
     padding: 15,
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: 12,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -685,5 +983,96 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888888",
     marginBottom: 30,
+  },
+  // Edit Profile Styles
+  editRow: {
+    marginBottom: 15,
+  },
+  editLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 8,
+  },
+  editInput: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  editButtonsContainer: {
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  cancelEditButton: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 10,
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    alignItems: "center",
+  },
+  cancelEditButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#666",
+  },
+  saveEditButton: {
+    flex: 1,
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 10,
+    marginLeft: 10,
+    alignItems: "center",
+  },
+  saveEditButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  orderHistoryButton: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#2c5aa0",
+  },
+  orderHistoryButtonText: {
+    color: "#2c5aa0",
+    fontSize: 16,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+  // Settings Account Info
+  accountInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+  },
+  accountInfoText: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  accountName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000",
+  },
+  accountEmail: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
   },
 })

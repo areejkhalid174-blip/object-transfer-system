@@ -36,25 +36,68 @@ const RiderSignup = ({ navigation }) => {
   };
 
   const goToRigester = async () => {
-    const user = await handleSignUp(email, password, {
-      role: "Rider",
-      firstName,
-      lastName,
-      phone,
-      cnic,
-      cnicFront,
-      cnicBack,
-      status: "pending",
-      earning: 0,
-      ratting: 0,
-    });
+    // Validation
+    if (!firstName.trim()) {
+      alert("Please enter your first name");
+      return;
+    }
+    if (!lastName.trim()) {
+      alert("Please enter your last name");
+      return;
+    }
+    if (!email.trim()) {
+      alert("Please enter your email");
+      return;
+    }
+    if (!password.trim()) {
+      alert("Please enter a password");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+    if (!phone.trim()) {
+      alert("Please enter your phone number");
+      return;
+    }
+    if (!cnic.trim()) {
+      alert("Please enter your CNIC number");
+      return;
+    }
+    if (!cnicFront) {
+      alert("Please upload CNIC front image");
+      return;
+    }
+    if (!cnicBack) {
+      alert("Please upload CNIC back image");
+      return;
+    }
 
-    if (user?.uid) {
-      dispatch(setRole("Rider"));
-      dispatch(setUser(user));
-      navigation.navigate("RiderHome"); // Navigate to Rider Dashboard
-    } else {
-      alert("Error in sign up");
+    try {
+      const result = await handleSignUp(email, password, {
+        role: "Rider",
+        firstName,
+        lastName,
+        phone,
+        cnic,
+        cnicFront,
+        cnicBack,
+        status: "pending",
+        earning: 0,
+        ratting: 0,
+      });
+
+      if (result?.success) {
+        dispatch(setRole("Rider"));
+        dispatch(setUser(result.data));
+        navigation.replace("RiderHome"); // Navigate to Rider Dashboard
+      } else {
+        alert(result?.error || "Error in sign up");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("An unexpected error occurred. Please try again.");
     }
   };
 

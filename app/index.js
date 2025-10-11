@@ -24,7 +24,6 @@ import CustomerChat from "./pages/CustomerChat";
 import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
-import Order from "./pages/Order";
 import Payment from "./pages/Payment";
 import Picture1 from "./pages/Picture1";
 import Picture2 from "./pages/Picture2";
@@ -33,6 +32,12 @@ import SelectDate from "./pages/SelectDate";
 import Vehicle from "./pages/Vehicle";
 import CustomerBookTrip from "./pages/CustomerBookTrip";
 import SplashScreen from "./pages/SplashScreen";
+import PackageDetail from "./pages/PackageDetail";
+import TrackOrder from "./pages/TrackOrder";
+
+// Admin
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import RoleSelection from "./pages/select";
 import VehicleSelection from "./pages/Vehicle";
@@ -65,8 +70,9 @@ const CustomerStack = () => (
     <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
     {/* <Stack.Screen name="Mobile" component={Mobile} /> */}
     {/* <Stack.Screen name="CustomerOtp" component={CustomerOtp} /> */}
-    <Stack.Screen name="CustomerHome" component={CustomerHome} />
-    <Stack.Screen name="Order" component={Order} />
+    <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
+    <Stack.Screen name="PackageDetail" component={PackageDetail} options={{ headerShown: false }} />
+    <Stack.Screen name="TrackOrder" component={TrackOrder} options={{ headerShown: false }} />
     <Stack.Screen name="Picture1" component={Picture1} />
     <Stack.Screen name="Picture2" component={Picture2} />
     <Stack.Screen name="Payment" component={Payment} />
@@ -82,6 +88,12 @@ const CustomerStack = () => (
   </Stack.Navigator>
 );
 
+const AdminStack = () => (
+  <Stack.Navigator initialRouteName="AdminDashboard" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
+    <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ headerShown: false }} />
+  </Stack.Navigator>
+);
+
 const App = () => {
   // Choose stack based on role
   const RenderStack = () => {
@@ -93,11 +105,14 @@ const App = () => {
         return <CustomerStack />;
       case "Rider":
         return <RiderStack />;
+      case "Admin":
+        return <AdminStack />;
       default:
         return (
           <Stack.Navigator initialRouteName="CustomerLogin" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
             <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CustomerLogin" component={CustomerLogin} />
+            <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
+            <Stack.Screen name="AdminLogin" component={AdminLogin} options={{ headerShown: false }} />
             <Stack.Screen name="CustomerSignup" component={CustomerSignup} />
             <Stack.Screen name="RiderSignup" component={RiderSignup} />
             <Stack.Screen name="Select" component={RoleSelection} />
@@ -107,6 +122,7 @@ const App = () => {
             <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
             <Stack.Screen name="TripDetails" component={TripDetails} />
             <Stack.Screen name="Setting" component={Setting} />
+            <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ headerShown: false }} />
           </Stack.Navigator>
         );
     }
@@ -114,11 +130,11 @@ const App = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#538cc6" }}>
-      <PersistGate loading={null} persistor={persistor}>
-        <Provider store={store}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
           <RenderStack />
-        </Provider>
-      </PersistGate>
+        </PersistGate>
+      </Provider>
     </SafeAreaView>
   );
 };

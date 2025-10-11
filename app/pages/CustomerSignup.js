@@ -17,21 +17,46 @@ const SignUp = ({ navigation }) => {
 
 
   const goToRigester = async () => {
-
-    const user = await handleSignUp(
-      email,
-      password,
-      { role: "Customer", firstName, lastName }
-    )
-
-    if (user?.uid) {
-      dispatch(setRole("Customer"))
-      dispatch(setUser(user))
-      navigation.navigate("SplashScreen", { userRole: "Customer" });
-    } else {
-      alert("Error in sign up")
+    // Validation
+    if (!firstName.trim()) {
+      alert("Please enter your first name");
+      return;
+    }
+    if (!lastName.trim()) {
+      alert("Please enter your last name");
+      return;
+    }
+    if (!email.trim()) {
+      alert("Please enter your email");
+      return;
+    }
+    if (!password.trim()) {
+      alert("Please enter a password");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
     }
 
+    try {
+      const result = await handleSignUp(
+        email,
+        password,
+        { role: "Customer", firstName, lastName }
+      )
+
+      if (result?.success) {
+        dispatch(setRole("Customer"))
+        dispatch(setUser(result.data))
+        navigation.replace("CustomerHome");
+      } else {
+        alert(result?.error || "Error in sign up")
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("An unexpected error occurred. Please try again.");
+    }
   }
 
 
