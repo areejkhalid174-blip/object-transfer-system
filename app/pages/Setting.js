@@ -53,14 +53,6 @@ export default function Setting({ navigation }) {
         <Text style={styles.optionText}>Delete Account</Text>
       </TouchableOpacity>
 
-      {/* Rider History Button */}
-      <TouchableOpacity
-        style={styles.historyBtn}
-        onPress={() => navigation.navigate("RiderHistory")}
-      >
-        <Text style={styles.historyText}>Go to Rider History</Text>
-      </TouchableOpacity>
-
       {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn}>
         <Text style={styles.logoutText}>Logout</Text>

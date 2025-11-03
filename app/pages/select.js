@@ -1,16 +1,19 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import { useDispatch } from "react-redux";
+import { setRole } from "../redux/Slices/HomeDataSlice";
 import Colors from "../constants/colors";
 
 export default function RoleSelection({navigation}) {
-
+  const dispatch = useDispatch();
 
   const handleSelectRole = () =>{
-    navigation.navigate("RiderSignup")
-
+    // Navigate to Rider login page
+    navigation.navigate("RiderLogin")
   }
+  
   const handleSelectRole2 = () =>{
-    navigation.navigate("CustomerSignup")
-
+    // Navigate to Customer login page
+    navigation.navigate("CustomerLogin")
   }
   return (
     <View

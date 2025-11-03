@@ -20,6 +20,7 @@ config.resolver.blockList = [
 // Add alias to completely avoid react-native-maps on web
 config.resolver.alias = {
   'react-native-maps': './components/WebMapView.js',
+  'react-native-keyboard-controller': './components/KeyboardControllerShim.js',
 };
 
 module.exports = config;

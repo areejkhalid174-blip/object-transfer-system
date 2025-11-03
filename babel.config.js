@@ -8,9 +8,12 @@ module.exports = function (api) {
         {
           alias: {
             'react-native-maps': './components/WebMapView.js',
+            'react-native-keyboard-controller': './components/KeyboardControllerShim.js',
           },
         },
       ],
+      // Reanimated plugin must be listed last
+      'react-native-reanimated/plugin',
     ],
   };
 };

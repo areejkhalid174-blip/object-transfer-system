@@ -137,15 +137,6 @@ const DashboardScreen = () => {
         <Text style={styles.sendPackageText}>Send New Package</Text>
       </TouchableOpacity>
 
-      {/* Recent Orders / Track Packages */}
-      <TouchableOpacity 
-        style={styles.trackPackagesButton}
-        onPress={() => navigation.navigate("MyOrders")}
-      >
-        <Icon name="location-outline" size={24} color="#000000" />
-        <Text style={styles.trackPackagesText}>Track Packages</Text>
-      </TouchableOpacity>
-
       {/* Book a Trip Button */}
       <TouchableOpacity 
         style={styles.bookTripButton}
@@ -173,76 +164,147 @@ const DashboardScreen = () => {
 
 // My Orders Screen
 const MyOrdersScreen = ({ navigation }) => {
-  const orders = [
-    {
-      orderId: "ORD12345",
-      orderDate: "10/10/2024",
-      orderTime: "10:30 AM",
-      pickupLocation: "123 Main Street, Gulshan-e-Iqbal, Karachi",
-      dropLocation: "456 Park Avenue, Clifton, Karachi",
-      packageType: "Documents",
-      fare: "Rs. 250",
-      status: "Delivered",
-    },
-    {
-      orderId: "ORD12346",
-      orderDate: "09/10/2024",
-      orderTime: "2:45 PM",
-      pickupLocation: "789 Garden Road, Saddar, Karachi",
-      dropLocation: "321 Beach View, DHA Phase 5, Karachi",
-      packageType: "Electronics",
-      fare: "Rs. 450",
-      status: "Delivered",
-    },
-  ];
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = useSelector((state) => state.home?.user);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const allOrders = await getAllData("orders");
+      
+      // Filter orders for current user
+      const userOrders = allOrders.filter(order => order.userId === user?.uid || order.customerEmail === user?.email);
+      
+      setOrders(userOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      Alert.alert("Error", "Failed to load orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", { 
+        month: "2-digit", 
+        day: "2-digit", 
+        year: "numeric" 
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString("en-US", { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      });
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "delivered":
+        return "#4CAF50";
+      case "pending":
+        return "#FF9800";
+      case "in transit":
+      case "in_progress":
+        return "#2196F3";
+      case "cancelled":
+        return "#FF3B30";
+      default:
+        return "#9E9E9E";
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.pageTitle}>My Orders</Text>
         
-        {orders.map((order) => (
-          <View key={order.orderId} style={styles.tripCard}>
-            <View style={styles.tripHeader}>
-              <Text style={styles.tripIdText}>{order.orderId}</Text>
-              <View style={[styles.tripStatusBadge, styles.statusCompletedBadge]}>
-                <Text style={styles.tripStatusText}>{order.status}</Text>
-              </View>
-            </View>
-
-            <View style={styles.tripInfoSection}>
-              <View style={styles.tripDateRow}>
-                <Ionicons name="calendar-outline" size={14} color="#666" />
-                <Text style={styles.tripDateText}>
-                  {order.orderDate} • {order.orderTime}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.tripLocationSection}>
-              <View style={styles.tripLocationRow}>
-                <Ionicons name="location" size={16} color="#4CAF50" />
-                <Text style={styles.tripLocationText} numberOfLines={1}>
-                  {order.pickupLocation}
-                </Text>
-              </View>
-              <View style={styles.tripLocationRow}>
-                <Ionicons name="flag" size={16} color="#FF3B30" />
-                <Text style={styles.tripLocationText} numberOfLines={1}>
-                  {order.dropLocation}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.tripFooter}>
-              <View style={styles.tripPackageInfo}>
-                <Ionicons name="cube-outline" size={14} color="#666" />
-                <Text style={styles.tripPackageText}>{order.packageType}</Text>
-              </View>
-              <Text style={styles.tripFareText}>{order.fare}</Text>
-            </View>
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Loading orders...</Text>
           </View>
-        ))}
+        ) : orders.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="receipt-outline" size={50} color="#888" />
+            <Text style={styles.emptyText}>No orders yet</Text>
+            <Text style={styles.emptySubtext}>
+              Your orders will appear here
+            </Text>
+          </View>
+        ) : (
+          orders.map((order) => (
+            <View key={order.id} style={styles.tripCard}>
+              <View style={styles.tripHeader}>
+                <Text style={styles.tripIdText}>Order #{order.id?.slice(0, 8) || "N/A"}</Text>
+                <View style={[styles.tripStatusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+                  <Text style={styles.tripStatusText}>{order.status || "Pending"}</Text>
+                </View>
+              </View>
+
+              <View style={styles.tripInfoSection}>
+                <View style={styles.tripDateRow}>
+                  <Ionicons name="calendar-outline" size={14} color="#666" />
+                  <Text style={styles.tripDateText}>
+                    {formatDate(order.createdAt)} • {formatTime(order.createdAt)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.tripLocationSection}>
+                <View style={styles.tripLocationRow}>
+                  <Ionicons name="location" size={16} color="#4CAF50" />
+                  <Text style={styles.tripLocationText} numberOfLines={2}>
+                    {order.pickupLocation || "Pickup location not set"}
+                  </Text>
+                </View>
+                <View style={styles.tripLocationRow}>
+                  <Ionicons name="flag" size={16} color="#FF3B30" />
+                  <Text style={styles.tripLocationText} numberOfLines={2}>
+                    {order.dropLocation || "Drop location not set"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.tripFooter}>
+                <View style={styles.tripPackageInfo}>
+                  <Ionicons name="cube-outline" size={14} color="#666" />
+                  <Text style={styles.tripPackageText}>
+                    {order.categoryName || order.packageType || "Package"}
+                  </Text>
+                </View>
+                <Text style={styles.tripFareText}>
+                  {order.weight ? `${order.weight}kg` : "N/A"}
+                </Text>
+              </View>
+
+              {order.additionalNotes && (
+                <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#E0E0E0" }}>
+                  <Text style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>
+                    Note: {order.additionalNotes}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -699,28 +761,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
-    marginLeft: 10,
-  },
-  trackPackagesButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-    borderWidth: 2,
-    borderColor: "#2c5aa0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  trackPackagesText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2c5aa0",
     marginLeft: 10,
   },
   bookTripButton: {

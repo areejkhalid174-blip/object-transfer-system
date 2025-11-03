@@ -9,9 +9,9 @@ const SplashScreen = ({ navigation, route }) => {
     const timer = setTimeout(() => {
       // Navigate based on user role after 2 seconds
       if (userRole === "Customer") {
-        navigation.replace("CustomerHome");
+        navigation.replace("CustomerLogin");
       } else if (userRole === "Rider") {
-        navigation.replace("HomeRider");
+        navigation.replace("RiderSignup");
       } else {
         navigation.replace("Select");
       }

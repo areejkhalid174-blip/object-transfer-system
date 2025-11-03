@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 
 export default function CustomerChat() {
@@ -61,7 +61,11 @@ export default function CustomerChat() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       <GiftedChat
         messages={messages}
         onSend={messages => onSend(messages)}
@@ -69,7 +73,7 @@ export default function CustomerChat() {
           _id: 1,
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

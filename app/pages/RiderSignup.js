@@ -20,6 +20,7 @@ const RiderSignup = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [cnic, setCnic] = useState("");
+  const [permanentAddress, setPermanentAddress] = useState("");
   const [cnicFront, setCnicFront] = useState(null);
   const [cnicBack, setCnicBack] = useState(null);
 
@@ -65,6 +66,10 @@ const RiderSignup = ({ navigation }) => {
       alert("Please enter your CNIC number");
       return;
     }
+    if (!permanentAddress.trim()) {
+      alert("Please enter your permanent address");
+      return;
+    }
     if (!cnicFront) {
       alert("Please upload CNIC front image");
       return;
@@ -81,6 +86,7 @@ const RiderSignup = ({ navigation }) => {
         lastName,
         phone,
         cnic,
+        permanentAddress,
         cnicFront,
         cnicBack,
         status: "pending",
@@ -91,7 +97,7 @@ const RiderSignup = ({ navigation }) => {
       if (result?.success) {
         dispatch(setRole("Rider"));
         dispatch(setUser(result.data));
-        navigation.replace("RiderHome"); // Navigate to Rider Dashboard
+        navigation.replace("RiderVerification"); // Navigate to Rider Verification page
       } else {
         alert(result?.error || "Error in sign up");
       }
@@ -161,11 +167,19 @@ const RiderSignup = ({ navigation }) => {
           keyboardType="numeric"
         />
 
+        {/* Permanent Address */}
+        <TextInput
+          onChangeText={(e) => setPermanentAddress(e)}
+          style={[styles.input, { height: 80, paddingTop: 10 }]}
+          placeholder="Permanent Address"
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+
         {/* CNIC Front Upload */}
         <TouchableOpacity
-         onChangeText={(e) => setCnicFront(e)}
           style={styles.uploadBtn}
-         placeholder="CNIC Front Upload"
           onPress={() => pickImage(setCnicFront)}
         >
           <Text style={{ color: "black" }}>Upload CNIC Front</Text>
@@ -204,6 +218,22 @@ const RiderSignup = ({ navigation }) => {
         <TouchableOpacity onPress={goToRigester} style={styles.registerBtn}>
           <Text style={styles.registerText}>Register</Text>
         </TouchableOpacity>
+
+        {/* Login Link */}
+        <View style={{ marginTop: 20, marginBottom: 30 }}>
+          <TouchableOpacity onPress={() => navigation.navigate("RiderLogin")}>
+            <Text
+              style={{
+                fontSize: 18,
+                color: "#000000",
+                textAlign: "center",
+                fontWeight: "600",
+              }}
+            >
+              Already have an account? <Text style={{ fontWeight: "bold", textDecorationLine: "underline" }}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );

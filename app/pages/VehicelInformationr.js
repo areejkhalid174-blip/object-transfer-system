@@ -6,10 +6,14 @@ import {
   TextInput,
   ScrollView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useSelector } from "react-redux";
+import { addData, uploadImageToCloudinary } from "../Helper/firebaseHelper";
 
 const VehicelInformationr = ({ navigation }) => {
   const [vehicleImage, setVehicleImage] = useState(null);
@@ -17,6 +21,12 @@ const VehicelInformationr = ({ navigation }) => {
   const [modelName, setModelName] = useState("");
   const [numberPlate, setNumberPlate] = useState("");
   const [color, setColor] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  // Get rider information from Redux
+  const user = useSelector((state) => state.home.user);
+
+  console.log("User from Redux:", user);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -28,18 +38,87 @@ const VehicelInformationr = ({ navigation }) => {
     }
   };
 
-  const handleSubmit = () => {
-    // Save vehicle details to Firebase for admin approval
-    console.log({
-      vehicleImage,
-      category,
-      modelName,
-      numberPlate,
-      color,
-    });
-    
-    alert("Vehicle details submitted for admin approval!");
-    navigation.navigate("SetMode"); // ✅ Next page navigation to step 3/3
+  const handleSubmit = async () => {
+    if (loading) return;
+
+    // Validation
+    if (!vehicleImage) {
+      Alert.alert("Error", "Please upload vehicle image");
+      return;
+    }
+    if (!category.trim()) {
+      Alert.alert("Error", "Please enter vehicle category");
+      return;
+    }
+    if (!modelName.trim()) {
+      Alert.alert("Error", "Please enter model name");
+      return;
+    }
+    if (!numberPlate.trim()) {
+      Alert.alert("Error", "Please enter registration number");
+      return;
+    }
+    if (!color.trim()) {
+      Alert.alert("Error", "Please enter vehicle color");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const riderId = user?.uid;
+      const riderEmail = user?.email;
+      const riderName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+
+      console.log("Rider ID:", riderId);
+      console.log("Rider Email:", riderEmail);
+      console.log("Rider Name:", riderName);
+
+      if (!riderId) {
+        Alert.alert("Error", "User not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Starting image upload to Cloudinary...");
+      // Upload image to Cloudinary
+      const uploadedImageUrl = await uploadImageToCloudinary(vehicleImage);
+      console.log("Image uploaded successfully:", uploadedImageUrl);
+
+      // Save vehicle details to Firebase with rider ID
+      const vehicleData = {
+        riderId: riderId,
+        riderEmail: riderEmail,
+        riderName: riderName,
+        vehicleImage: uploadedImageUrl,
+        category: category,
+        modelName: modelName,
+        numberPlate: numberPlate.toUpperCase(),
+        color: color,
+        status: "pending", // pending, approved, rejected
+        createdAt: new Date().toISOString(),
+      };
+
+      console.log("Saving vehicle data to Firebase:", vehicleData);
+      const vehicleId = await addData("vehicles", vehicleData);
+      console.log("Vehicle saved successfully with ID:", vehicleId);
+      
+      Alert.alert(
+        "Success",
+        "Vehicle details submitted for admin approval!",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("SetMode")
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Error submitting vehicle:", error);
+      console.error("Error details:", error.message);
+      Alert.alert("Error", `Failed to submit vehicle details: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -190,17 +269,21 @@ const VehicelInformationr = ({ navigation }) => {
         {/* Submit Button */}
         <TouchableOpacity
           onPress={handleSubmit}
+          disabled={loading}
           style={{
             width: "70%",
             height: 50,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: loading ? "#CCCCCC" : "#FFFFFF",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
             marginBottom: 20,
             justifyContent: "center",
+            flexDirection: "row",
+            alignItems: "center",
           }}
         >
+          {loading && <ActivityIndicator size="small" color="#000000" style={{ marginRight: 10 }} />}
           <Text
             style={{
               fontSize: 18,
@@ -209,7 +292,7 @@ const VehicelInformationr = ({ navigation }) => {
               fontWeight: "600",
             }}
           >
-            Submit for Approval
+            {loading ? "Submitting..." : "Submit for Approval"}
           </Text>
         </TouchableOpacity>
 

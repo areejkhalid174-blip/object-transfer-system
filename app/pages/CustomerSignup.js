@@ -40,18 +40,18 @@ const SignUp = ({ navigation }) => {
     }
 
     try {
-      const result = await handleSignUp(
+      const user = await handleSignUp(
         email,
         password,
         { role: "Customer", firstName, lastName }
-      )
+      );
 
-      if (result?.success) {
-        dispatch(setRole("Customer"))
-        dispatch(setUser(result.data))
+      if (user?.uid) {
+        dispatch(setRole("Customer"));
+        dispatch(setUser(user));
         navigation.replace("CustomerHome");
       } else {
-        alert(result?.error || "Error in sign up")
+        alert("Error in sign up");
       }
     } catch (error) {
       console.error("Signup error:", error);
@@ -62,8 +62,8 @@ const SignUp = ({ navigation }) => {
 
 
   return (
-    <ScrollView style={{ Height: "100%", backgroundColor: "#538cc6" }}>
-      <View style={{ flex: 1, display: "flex", backgroundColor: "#538cc6" }}>
+    <ScrollView style={{ height: "100%", backgroundColor: "#538cc6" }}>
+      <View style={{ flex: 1, display: "flex", backgroundColor: "#538cc6", paddingBottom: 20 }}>
         <Text
           style={{
             fontSize: 30,
@@ -123,6 +123,7 @@ const SignUp = ({ navigation }) => {
         />
         <TextInput
           onChangeText={(e) => setPassword(e)}
+          secureTextEntry={true}
           style={{
             borderColor: "#1c1b1fff",
             borderWidth: 1,
@@ -136,25 +137,28 @@ const SignUp = ({ navigation }) => {
           }}
           placeholder="password"
         />
-        <View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 20 }}>
+          {firstName && lastName && email && password && password.length >= 6 ? (
+            <AntDesign name="checkcircle" size={24} color="#4CAF50" />
+          ) : (
+            <AntDesign name="checkcircleo" size={24} color="#999999" />
+          )}
           <Text
             style={{
               fontSize: 12,
               color: "#FFFFFF",
-              textAlign: "center",
-              paddingTop: 20,
+              marginLeft: 10,
             }}
           >
             I accept the terms and privacy policy
           </Text>
         </View>
-        <AntDesign name="checkcircle" size={24} color="#161518ff" />
         <TouchableOpacity
           onPress={goToRigester}
           style={{
             width: "50%",
             height: 50,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "#0e0d0fff",
             alignSelf: "center",
             borderRadius: 10,
             marginTop: 40,
@@ -163,7 +167,7 @@ const SignUp = ({ navigation }) => {
           <Text
             style={{
               fontSize: 20,
-              color: "#000000",
+              color: "white",
               textAlign: "center",
               paddingTop: 10,
             }}
@@ -171,6 +175,20 @@ const SignUp = ({ navigation }) => {
             Register
           </Text>
         </TouchableOpacity>
+        <View style={{ marginTop: 30, marginBottom: 30 }}>
+          <TouchableOpacity onPress={() => navigation.navigate("CustomerLogin")}>
+            <Text
+              style={{
+                fontSize: 18,
+                color: "#FFFFFF",
+                textAlign: "center",
+                fontWeight: "600",
+              }}
+            >
+              Already have an account? <Text style={{ fontWeight: "bold", textDecorationLine: "underline" }}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );

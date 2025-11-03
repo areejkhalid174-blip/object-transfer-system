@@ -7,10 +7,14 @@ import {
   StyleSheet, 
   ScrollView,
   Image,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useSelector } from "react-redux";
+import { uploadImageToCloudinary } from "../Helper/cloudinaryHelper";
+import { addData } from "../Helper/firebaseHelper";
 
 const PackageDetail = ({ navigation, route }) => {
   const { categoryId, categoryName } = route?.params || {};
@@ -20,7 +24,13 @@ const PackageDetail = ({ navigation, route }) => {
   const [packageType, setPackageType] = useState(""); // small/medium/large
   const [weight, setWeight] = useState("");
   const [packagePhoto, setPackagePhoto] = useState(null);
+  const [packagePhotoUrl, setPackagePhotoUrl] = useState(null); // Cloudinary URL
   const [additionalNotes, setAdditionalNotes] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+
+  // Get user from Redux
+  const user = useSelector((state) => state.home?.user);
 
   const packageSizes = [
     { id: "small", label: "Small", icon: "cube-outline", description: "Up to 5kg" },
@@ -44,11 +54,26 @@ const PackageDetail = ({ navigation, route }) => {
     });
 
     if (!result.canceled) {
-      setPackagePhoto(result.assets[0].uri);
+      const imageUri = result.assets[0].uri;
+      setPackagePhoto(imageUri); // Set local preview
+      
+      // Upload to Cloudinary
+      setUploadingImage(true);
+      try {
+        const cloudinaryUrl = await uploadImageToCloudinary(imageUri);
+        setPackagePhotoUrl(cloudinaryUrl); // Save Cloudinary URL
+        Alert.alert('Success', 'Image uploaded successfully!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+        setPackagePhoto(null); // Clear preview on error
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
-  const findRider = () => {
+  const placeOrder = async () => {
     // Validation
     if (!pickupLocation.trim()) {
       Alert.alert("Error", "Please enter pickup location");
@@ -75,19 +100,44 @@ const PackageDetail = ({ navigation, route }) => {
       return;
     }
 
-    // Navigate to Track Order screen
-    // Note: packagePhoto (blob URL) won't persist across navigation
-    // In production, upload to Firebase Storage first
-    navigation.navigate("TrackOrder", {
-      categoryId,
-      categoryName,
-      pickupLocation,
-      dropLocation,
-      packageType,
-      weight: cleanWeight,
-      packagePhoto: packagePhoto, // This is just for display, won't work in production
-      additionalNotes,
-    });
+    if (!user || !user.uid) {
+      Alert.alert("Error", "User not logged in. Please login first.");
+      return;
+    }
+
+    // Place order
+    setPlacingOrder(true);
+    try {
+      const orderData = {
+        userId: user.uid,
+        customerName: user.firstName + " " + user.lastName || user.email,
+        customerEmail: user.email,
+        categoryId: categoryId || null,
+        categoryName: categoryName || "General Delivery",
+        pickupLocation,
+        dropLocation,
+        packageType,
+        weight: cleanWeight,
+        packagePhoto: packagePhotoUrl || null,
+        additionalNotes: additionalNotes || "",
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const orderId = await addData("orders", orderData);
+      
+      // Navigate directly to OrderConfirmation screen
+      navigation.navigate("OrderConfirmation", {
+        orderId,
+        ...orderData,
+      });
+    } catch (error) {
+      console.error("Error placing order:", error);
+      Alert.alert("Error", "Failed to place order. Please try again.");
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   return (
@@ -194,13 +244,25 @@ const PackageDetail = ({ navigation, route }) => {
         {/* Photo Upload */}
         <View style={styles.section}>
           <Text style={styles.label}>Package Photo (Optional)</Text>
-          <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-            {packagePhoto ? (
+          <TouchableOpacity 
+            style={styles.photoButton} 
+            onPress={pickImage}
+            disabled={uploadingImage}
+          >
+            {uploadingImage ? (
+              <View style={styles.photoPlaceholder}>
+                <ActivityIndicator size="large" color="#2c5aa0" />
+                <Text style={styles.photoText}>Uploading...</Text>
+              </View>
+            ) : packagePhoto ? (
               <View style={styles.photoPreviewContainer}>
                 <Image source={{ uri: packagePhoto }} style={styles.photoPreview} />
                 <TouchableOpacity 
                   style={styles.removePhotoButton}
-                  onPress={() => setPackagePhoto(null)}
+                  onPress={() => {
+                    setPackagePhoto(null);
+                    setPackagePhotoUrl(null);
+                  }}
                 >
                   <Ionicons name="close-circle" size={24} color="#FF3B30" />
                 </TouchableOpacity>
@@ -229,10 +291,23 @@ const PackageDetail = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Find Rider Button */}
-        <TouchableOpacity style={styles.findRiderButton} onPress={findRider}>
-          <Ionicons name="bicycle" size={24} color="#FFFFFF" />
-          <Text style={styles.findRiderText}>Find Rider</Text>
+        {/* Place Order Button */}
+        <TouchableOpacity 
+          style={[styles.placeOrderButton, placingOrder && styles.placeOrderButtonDisabled]} 
+          onPress={placeOrder}
+          disabled={placingOrder || uploadingImage}
+        >
+          {placingOrder ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.placeOrderText}>Placing Order...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
+              <Text style={styles.placeOrderText}>Place Order</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -373,9 +448,9 @@ const styles = StyleSheet.create({
     color: "#666",
     marginLeft: 8,
   },
-  findRiderButton: {
+  placeOrderButton: {
     flexDirection: "row",
-    backgroundColor: "#2c5aa0",
+    backgroundColor: "#4CAF50",
     padding: 18,
     borderRadius: 12,
     alignItems: "center",
@@ -388,7 +463,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  findRiderText: {
+  placeOrderButtonDisabled: {
+    backgroundColor: "#9E9E9E",
+    opacity: 0.7,
+  },
+  placeOrderText: {
     fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",

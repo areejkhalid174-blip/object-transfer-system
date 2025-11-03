@@ -32,7 +32,7 @@ export default function SetMode({ navigation }) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.option}
-            onPress={() => navigation.navigate("RatingRider", { mode: item.title })}
+            onPress={() => navigation.navigate("RiderHome", { mode: item.title })}
           >
             <View style={styles.optionLeft}>
               <MaterialCommunityIcons

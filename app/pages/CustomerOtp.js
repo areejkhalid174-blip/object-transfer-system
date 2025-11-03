@@ -1,5 +1,4 @@
-
-import { flex, Keyboard, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Keyboard, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OtpInput } from "react-native-otp-entry";
 
 const CustomerOtp = ({ navigation }) => {
@@ -10,7 +9,7 @@ const CustomerOtp = ({ navigation }) => {
     <ScrollView style={{ height: "100%" }}>
       <View
         style={{
-          display: flex,
+          display: "flex",
           flex: 1,
           width: "90%",
           backgroundColor: "#d5d2ddff",

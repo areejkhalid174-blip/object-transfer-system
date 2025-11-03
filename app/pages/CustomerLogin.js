@@ -24,8 +24,13 @@ const CustomerLogin = ({ navigation }) => {
         dispatch(setUser(user));
         dispatch(setRole(user.role));
         
-        // Navigate to splash screen with user role
-        navigation.navigate("SplashScreen", { userRole: user.role });
+        // Navigate to customer home if user is a customer
+        if (user.role === 'Customer' || user.role === 'customer') {
+          navigation.navigate("CustomerHome");
+        } else {
+          // Fallback to SplashScreen for other roles
+          navigation.navigate("SplashScreen", { userRole: user.role });
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -117,45 +122,34 @@ const CustomerLogin = ({ navigation }) => {
           {loading ? "Logging in..." : "Continue"}
         </Text>
       </TouchableOpacity>
-      <View>
-        <TouchableOpacity onPress={() => navigation.navigate("Select")}>
+      <View style={{ marginTop: 30 }}>
+        <TouchableOpacity onPress={() => navigation.navigate("CustomerSignup")}>
           <Text
             style={{
-              fontSize: 25,
+              fontSize: 18,
               color: Colors.textSecondary,
               textAlign: "center",
-              paddingTop: 50,
-              fontWeight: "bold",
+              fontWeight: "600",
             }}
           >
-            don't have an account "SignUp"
+            Don't have an account? <Text style={{ fontWeight: "bold", textDecorationLine: "underline" }}>Sign Up</Text>
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Admin Login Button */}
-      <TouchableOpacity 
-        onPress={() => {
-          console.log("Admin Login button pressed");
-          try {
-            navigation.navigate("AdminLogin");
-          } catch (error) {
-            console.error("Navigation error:", error);
-            alert("Navigation error: " + error.message);
-          }
-        }}
-        style={{
-          marginTop: 30,
-          padding: 15,
-          backgroundColor: "#2c5aa0",
-          borderRadius: 10,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
-          🔐 Admin Login
-        </Text>
-      </TouchableOpacity>
+      <View style={{ marginTop: 20 }}>
+        <TouchableOpacity onPress={() => navigation.navigate("RiderLogin")}>
+          <Text
+            style={{
+              fontSize: 16,
+              color: Colors.textSecondary,
+              textAlign: "center",
+              fontWeight: "500",
+            }}
+          >
+            Are you a Rider? <Text style={{ fontWeight: "bold", textDecorationLine: "underline" }}>Login as Rider</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
