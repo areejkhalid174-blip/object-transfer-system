@@ -29,6 +29,7 @@ import CustomerBookTrip from "./pages/CustomerBookTrip";
 import SplashScreen from "./pages/SplashScreen";
 import PackageDetail from "./pages/PackageDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import MapSelector from "./pages/MapSelector";
 
 import RoleSelection from "./pages/select";
 import VehicleSelection from "./pages/Vehicle";
@@ -62,6 +63,7 @@ const CustomerStack = () => (
     <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
     <Stack.Screen name="PackageDetail" component={PackageDetail} options={{ headerShown: false }} />
     <Stack.Screen name="OrderConfirmation" component={OrderConfirmation} options={{ headerShown: false }} />
+    <Stack.Screen name="MapSelector" component={MapSelector} options={{ headerShown: false }} />
     <Stack.Screen name="SelectDate" component={SelectDate} />
     <Stack.Screen name="Vehicle" component={Vehicle} />
     <Stack.Screen name="RatingCustomer" component={RatingCustomer} />

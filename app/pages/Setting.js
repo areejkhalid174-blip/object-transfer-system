@@ -1,7 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, Switch, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, Switch, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import { useDispatch } from "react-redux";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
+import { logout } from "../Helper/firebaseHelper";
 
 export default function Setting({ navigation }) {
+  const dispatch = useDispatch();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [locationAccess, setLocationAccess] = useState(true);
@@ -54,7 +58,39 @@ export default function Setting({ navigation }) {
       </TouchableOpacity>
 
       {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity 
+        style={styles.logoutBtn}
+        onPress={() => {
+          Alert.alert(
+            "Logout",
+            "Are you sure you want to logout?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel"
+              },
+              {
+                text: "Logout",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    // Logout from Firebase
+                    await logout();
+                    // Clear Redux state
+                    dispatch(setRole(""));
+                    dispatch(setUser({}));
+                  } catch (error) {
+                    console.error("Logout error:", error);
+                    // Still clear the state even if Firebase logout fails
+                    dispatch(setRole(""));
+                    dispatch(setUser({}));
+                  }
+                }
+              }
+            ]
+          );
+        }}
+      >
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>

@@ -163,7 +163,7 @@ const DashboardScreen = () => {
 };
 
 // My Orders Screen
-const MyOrdersScreen = ({ navigation }) => {
+const MyOrdersScreen = ({ navigation, route }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = useSelector((state) => state.home?.user);
@@ -171,6 +171,14 @@ const MyOrdersScreen = ({ navigation }) => {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Refresh orders when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchOrders();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchOrders = async () => {
     try {
@@ -180,7 +188,14 @@ const MyOrdersScreen = ({ navigation }) => {
       // Filter orders for current user
       const userOrders = allOrders.filter(order => order.userId === user?.uid || order.customerEmail === user?.email);
       
-      setOrders(userOrders);
+      // Sort by most recent first
+      const sortedOrders = userOrders.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+      
+      setOrders(sortedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       Alert.alert("Error", "Failed to load orders");
@@ -251,7 +266,15 @@ const MyOrdersScreen = ({ navigation }) => {
           </View>
         ) : (
           orders.map((order) => (
-            <View key={order.id} style={styles.tripCard}>
+            <TouchableOpacity 
+              key={order.id} 
+              style={styles.tripCard}
+              onPress={() => {
+                navigation.navigate("OrderConfirmation", {
+                  orderId: order.id,
+                });
+              }}
+            >
               <View style={styles.tripHeader}>
                 <Text style={styles.tripIdText}>Order #{order.id?.slice(0, 8) || "N/A"}</Text>
                 <View style={[styles.tripStatusBadge, { backgroundColor: getStatusColor(order.status) }]}>
@@ -272,16 +295,37 @@ const MyOrdersScreen = ({ navigation }) => {
                 <View style={styles.tripLocationRow}>
                   <Ionicons name="location" size={16} color="#4CAF50" />
                   <Text style={styles.tripLocationText} numberOfLines={2}>
-                    {order.pickupLocation || "Pickup location not set"}
+                    {order.originCity || order.pickupLocation || "Origin not set"}
                   </Text>
                 </View>
                 <View style={styles.tripLocationRow}>
                   <Ionicons name="flag" size={16} color="#FF3B30" />
                   <Text style={styles.tripLocationText} numberOfLines={2}>
-                    {order.dropLocation || "Drop location not set"}
+                    {order.destinationCity || order.dropLocation || "Destination not set"}
                   </Text>
                 </View>
               </View>
+
+              {(order.senderName || order.receiverName) && (
+                <View style={styles.tripContactSection}>
+                  {order.senderName && (
+                    <View style={styles.tripContactRow}>
+                      <Ionicons name="person-outline" size={14} color="#4CAF50" />
+                      <Text style={styles.tripContactText}>
+                        From: {order.senderName} {order.senderPhone ? `(${order.senderPhone})` : ""}
+                      </Text>
+                    </View>
+                  )}
+                  {order.receiverName && (
+                    <View style={styles.tripContactRow}>
+                      <Ionicons name="person-outline" size={14} color="#FF3B30" />
+                      <Text style={styles.tripContactText}>
+                        To: {order.receiverName} {order.receiverPhone ? `(${order.receiverPhone})` : ""}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               <View style={styles.tripFooter}>
                 <View style={styles.tripPackageInfo}>
@@ -291,7 +335,7 @@ const MyOrdersScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <Text style={styles.tripFareText}>
-                  {order.weight ? `${order.weight}kg` : "N/A"}
+                  {order.price ? `₹${parseFloat(order.price).toFixed(2)}` : order.weight ? `${order.weight}kg` : "N/A"}
                 </Text>
               </View>
 
@@ -302,7 +346,7 @@ const MyOrdersScreen = ({ navigation }) => {
                   </Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
@@ -838,6 +882,23 @@ const styles = StyleSheet.create({
   },
   tripLocationSection: {
     marginBottom: 12,
+  },
+  tripContactSection: {
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+  },
+  tripContactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  tripContactText: {
+    fontSize: 12,
+    color: "#666666",
+    marginLeft: 6,
+    flex: 1,
   },
   tripLocationRow: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Text, 
   TextInput, 
@@ -19,8 +19,20 @@ import { addData } from "../Helper/firebaseHelper";
 const PackageDetail = ({ navigation, route }) => {
   const { categoryId, categoryName } = route?.params || {};
 
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [dropLocation, setDropLocation] = useState("");
+  const [originCity, setOriginCity] = useState("");
+  const [destinationCity, setDestinationCity] = useState("");
+  const [originLat, setOriginLat] = useState(null);
+  const [originLng, setOriginLng] = useState(null);
+  const [destinationLat, setDestinationLat] = useState(null);
+  const [destinationLng, setDestinationLng] = useState(null);
+  const [distance, setDistance] = useState(null);
+  const [calculatedPrice, setCalculatedPrice] = useState(null);
+  const [senderName, setSenderName] = useState("");
+  const [senderAddress, setSenderAddress] = useState("");
+  const [senderPhone, setSenderPhone] = useState("");
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverAddress, setReceiverAddress] = useState("");
+  const [receiverPhone, setReceiverPhone] = useState("");
   const [packageType, setPackageType] = useState(""); // small/medium/large
   const [weight, setWeight] = useState("");
   const [packagePhoto, setPackagePhoto] = useState(null);
@@ -37,6 +49,68 @@ const PackageDetail = ({ navigation, route }) => {
     { id: "medium", label: "Medium", icon: "cube", description: "5kg - 15kg" },
     { id: "large", label: "Large", icon: "cube-sharp", description: "15kg+" },
   ];
+
+  // Listen for city selection from CitySelector
+  useEffect(() => {
+    if (route.params?.originCity) {
+      setOriginCity(route.params.originCity);
+      setOriginLat(route.params.originLat);
+      setOriginLng(route.params.originLng);
+    }
+    if (route.params?.destinationCity) {
+      setDestinationCity(route.params.destinationCity);
+      setDestinationLat(route.params.destinationLat);
+      setDestinationLng(route.params.destinationLng);
+    }
+    if (route.params?.distance) {
+      setDistance(route.params.distance);
+    }
+    if (route.params?.calculatedPrice) {
+      setCalculatedPrice(route.params.calculatedPrice);
+    }
+    if (route.params?.senderName) {
+      setSenderName(route.params.senderName);
+    }
+    if (route.params?.senderAddress) {
+      setSenderAddress(route.params.senderAddress);
+    }
+    if (route.params?.senderPhone) {
+      setSenderPhone(route.params.senderPhone);
+    }
+    if (route.params?.receiverName) {
+      setReceiverName(route.params.receiverName);
+    }
+    if (route.params?.receiverAddress) {
+      setReceiverAddress(route.params.receiverAddress);
+    }
+    if (route.params?.receiverPhone) {
+      setReceiverPhone(route.params.receiverPhone);
+    }
+    // Clear the params to avoid applying it again on re-render
+    navigation.setParams({
+      originCity: undefined,
+      originLat: undefined,
+      originLng: undefined,
+      destinationCity: undefined,
+      destinationLat: undefined,
+      destinationLng: undefined,
+      distance: undefined,
+      calculatedPrice: undefined,
+      senderName: undefined,
+      senderAddress: undefined,
+      senderPhone: undefined,
+      receiverName: undefined,
+      receiverAddress: undefined,
+      receiverPhone: undefined,
+    });
+  }, [route.params?.originCity, route.params?.destinationCity]);
+
+  // Navigate to city selector screen
+  const openCitySelector = () => {
+    navigation.navigate("MapSelector", {
+      returnScreen: "PackageDetail",
+    });
+  };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -75,12 +149,16 @@ const PackageDetail = ({ navigation, route }) => {
 
   const placeOrder = async () => {
     // Validation
-    if (!pickupLocation.trim()) {
-      Alert.alert("Error", "Please enter pickup location");
+    if (!originCity || !destinationCity) {
+      Alert.alert("Error", "Please select origin and destination cities");
       return;
     }
-    if (!dropLocation.trim()) {
-      Alert.alert("Error", "Please enter drop location");
+    if (!senderName.trim() || !senderAddress.trim() || !senderPhone.trim()) {
+      Alert.alert("Error", "Please fill in all sender details");
+      return;
+    }
+    if (!receiverName.trim() || !receiverAddress.trim() || !receiverPhone.trim()) {
+      Alert.alert("Error", "Please fill in all receiver details");
       return;
     }
     if (!packageType) {
@@ -114,12 +192,24 @@ const PackageDetail = ({ navigation, route }) => {
         customerEmail: user.email,
         categoryId: categoryId || null,
         categoryName: categoryName || "General Delivery",
-        pickupLocation,
-        dropLocation,
+        originCity,
+        originLat,
+        originLng,
+        destinationCity,
+        destinationLat,
+        destinationLng,
+        distance: distance || 0,
+        price: calculatedPrice ? parseFloat(calculatedPrice) : null,
         packageType,
         weight: cleanWeight,
         packagePhoto: packagePhotoUrl || null,
         additionalNotes: additionalNotes || "",
+        senderName: senderName || "",
+        senderAddress: senderAddress || "",
+        senderPhone: senderPhone || "",
+        receiverName: receiverName || "",
+        receiverAddress: receiverAddress || "",
+        receiverPhone: receiverPhone || "",
         status: "pending",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -160,34 +250,81 @@ const PackageDetail = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* Pickup Location */}
+        {/* City Selection */}
         <View style={styles.section}>
-          <Text style={styles.label}>Pickup Location</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="location" size={20} color="#4CAF50" style={styles.inputIcon} />
-            <TextInput
-              value={pickupLocation}
-              onChangeText={setPickupLocation}
-              style={styles.input}
-              placeholder="Enter pickup address"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
-
-        {/* Drop Location */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Drop Location</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="flag" size={20} color="#FF3B30" style={styles.inputIcon} />
-            <TextInput
-              value={dropLocation}
-              onChangeText={setDropLocation}
-              style={styles.input}
-              placeholder="Enter drop address"
-              placeholderTextColor="#999"
-            />
-          </View>
+          <Text style={styles.label}>Origin & Destination</Text>
+          <TouchableOpacity 
+            style={styles.citySelectorButton}
+            onPress={openCitySelector}
+          >
+            <View style={styles.citySelectorContent}>
+              <View style={styles.cityInfoContainer}>
+                <View style={[styles.cityRow, { marginBottom: 12 }]}>
+                  <Ionicons name="location" size={20} color="#4CAF50" />
+                  <View style={styles.cityTextContainer}>
+                    <Text style={styles.cityLabel}>Origin</Text>
+                    <Text style={styles.cityValue}>
+                      {originCity || "Select origin city"}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.cityRow}>
+                  <Ionicons name="flag" size={20} color="#FF3B30" />
+                  <View style={styles.cityTextContainer}>
+                    <Text style={styles.cityLabel}>Destination</Text>
+                    <Text style={styles.cityValue}>
+                      {destinationCity || "Select destination city"}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#666" />
+            </View>
+          </TouchableOpacity>
+          
+          {/* Sender & Receiver Info Display */}
+          {(senderName || receiverName) && (
+            <View style={styles.infoDisplayContainer}>
+              {senderName && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="person" size={16} color="#4CAF50" />
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoLabel}>Sender:</Text>
+                    <Text style={styles.infoValue}>{senderName}</Text>
+                    {senderPhone && (
+                      <Text style={styles.infoSubValue}>{senderPhone}</Text>
+                    )}
+                  </View>
+                </View>
+              )}
+              {receiverName && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="person" size={16} color="#FF3B30" />
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoLabel}>Receiver:</Text>
+                    <Text style={styles.infoValue}>{receiverName}</Text>
+                    {receiverPhone && (
+                      <Text style={styles.infoSubValue}>{receiverPhone}</Text>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+          
+          {/* Price Display */}
+          {calculatedPrice && distance && (
+            <View style={styles.priceDisplayContainer}>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Distance:</Text>
+                <Text style={styles.priceValue}>{distance.toFixed(2)} km</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Total Price:</Text>
+                <Text style={styles.totalPriceValue}>₹{calculatedPrice}</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Package Size Selection */}
@@ -472,6 +609,95 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     marginLeft: 10,
+  },
+  citySelectorButton: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
+  },
+  citySelectorContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cityInfoContainer: {
+    flex: 1,
+  },
+  cityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cityTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  cityLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 2,
+  },
+  cityValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  priceDisplayContainer: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 10,
+  },
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  priceValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+  },
+  totalPriceValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2c5aa0",
+  },
+  infoDisplayContainer: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 10,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  infoTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+  infoSubValue: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
   },
 });
 

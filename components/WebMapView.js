@@ -1,10 +1,28 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 // Web-specific MapView component that completely avoids react-native-maps
-const MapView = ({ children, style, initialRegion, ...props }) => {
+const MapView = ({ children, style, initialRegion, onPress, ...props }) => {
+  const handlePress = (e) => {
+    // For web, simulate coordinate by getting center of map
+    if (onPress && initialRegion) {
+      onPress({
+        nativeEvent: {
+          coordinate: {
+            latitude: initialRegion.latitude,
+            longitude: initialRegion.longitude,
+          }
+        }
+      });
+    }
+  };
+
   return (
-    <View style={[styles.container, style]}>
+    <TouchableOpacity 
+      style={[styles.container, style]} 
+      activeOpacity={1}
+      onPress={handlePress}
+    >
       <View style={styles.mapPlaceholder}>
         <Text style={styles.mapText}>🗺️ Map View</Text>
         <Text style={styles.coordinateText}>
@@ -14,9 +32,10 @@ const MapView = ({ children, style, initialRegion, ...props }) => {
           Lng: {initialRegion?.longitude?.toFixed(4) || '0.0000'}
         </Text>
         <Text style={styles.noteText}>Web Preview - Full maps on mobile</Text>
+        <Text style={styles.noteText}>Tap to select location</Text>
       </View>
       {children}
-    </View>
+    </TouchableOpacity>
   );
 };
 

@@ -1,25 +1,148 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { CommonActions } from "@react-navigation/native";
+import { getDataById, subscribeToDocument, getAllData } from "../Helper/firebaseHelper";
 
 const OrderConfirmation = ({ navigation, route }) => {
-  const { orderId, ...orderData } = route?.params || {};
+  const { orderId } = route?.params || {};
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [pricePerKm, setPricePerKm] = useState(null);
 
-  // Calculate estimated delivery time (you can make this dynamic later)
-  const estimatedDelivery = "2-4 hours";
+  useEffect(() => {
+    if (!orderId) {
+      Alert.alert("Error", "Order ID not found");
+      setLoading(false);
+      return;
+    }
 
-  // Mock charges calculation (replace with your actual pricing logic)
-  const totalCharges = orderData.packageType === "small" 
-    ? "Rs. 250" 
-    : orderData.packageType === "medium" 
-    ? "Rs. 400" 
-    : "Rs. 600";
+    // Fetch initial order data
+    const fetchOrderData = async () => {
+      try {
+        const data = await getDataById("orders", orderId);
+        if (data) {
+          setOrderData(data);
+        } else {
+          Alert.alert("Error", "Order not found");
+        }
+      } catch (error) {
+        console.error("Error fetching order:", error);
+        Alert.alert("Error", "Failed to load order details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderData();
+
+    // Fetch price data for calculation
+    const fetchPriceData = async () => {
+      try {
+        const priceDataResult = await getAllData("price");
+        if (priceDataResult && priceDataResult.length > 0) {
+          setPricePerKm(priceDataResult[0].price);
+        }
+      } catch (error) {
+        console.error("Error fetching price data:", error);
+      }
+    };
+
+    fetchPriceData();
+
+    // Set up real-time listener for status updates
+    const unsubscribe = subscribeToDocument("orders", orderId, (data) => {
+      if (data) {
+        setOrderData(data);
+      }
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [orderId]);
+
+  // Calculate estimated delivery time based on distance
+  const getEstimatedDelivery = () => {
+    if (!orderData?.distance) return "2-4 hours";
+    const distance = orderData.distance;
+    if (distance < 50) return "2-4 hours";
+    if (distance < 100) return "4-6 hours";
+    if (distance < 200) return "6-8 hours";
+    return "8-12 hours";
+  };
+
+  // Format price - also calculate if distance and price per km are available
+  const formatPrice = (price, distance, pricePerKm) => {
+    // If price exists, use it
+    if (price && price > 0) {
+      return `₹${parseFloat(price).toFixed(2)}`;
+    }
+    
+    // If price is missing but we have distance and price per km, calculate it
+    if (distance && distance > 0 && pricePerKm && pricePerKm > 0) {
+      const calculatedPrice = distance * pricePerKm;
+      return `₹${calculatedPrice.toFixed(2)}`;
+    }
+    
+    return "Not calculated";
+  };
+
+  // Get status color and icon
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return { color: "#FF9800", icon: "time-outline", bgColor: "#FFF3E0" };
+      case "approved":
+        return { color: "#2196F3", icon: "checkmark-circle-outline", bgColor: "#E3F2FD" };
+      case "in_transit":
+      case "in transit":
+        return { color: "#2196F3", icon: "car-outline", bgColor: "#E3F2FD" };
+      case "delivered":
+        return { color: "#4CAF50", icon: "checkmark-done-circle", bgColor: "#E8F5E9" };
+      case "cancelled":
+        return { color: "#F44336", icon: "close-circle-outline", bgColor: "#FFEBEE" };
+      default:
+        return { color: "#666", icon: "help-circle-outline", bgColor: "#F5F5F5" };
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#2c5aa0" />
+        <Text style={styles.loadingText}>Loading order details...</Text>
+      </View>
+    );
+  }
+
+  if (!orderData) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Ionicons name="alert-circle-outline" size={60} color="#F44336" />
+        <Text style={styles.errorText}>Order not found</Text>
+        <TouchableOpacity 
+          style={styles.secondaryButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.secondaryButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const statusStyle = getStatusStyle(orderData.status);
 
   return (
     <ScrollView style={styles.container}>
@@ -41,23 +164,72 @@ const OrderConfirmation = ({ navigation, route }) => {
           <Text style={styles.orderIdText}>{orderId || "N/A"}</Text>
         </View>
 
-        {/* Pickup Location */}
+        {/* Order Status */}
+        <View style={[styles.card, { backgroundColor: statusStyle.bgColor }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name={statusStyle.icon} size={24} color={statusStyle.color} />
+            <Text style={styles.cardTitle}>Order Status</Text>
+          </View>
+          <Text style={[styles.statusText, { color: statusStyle.color }]}>
+            {orderData.status?.toUpperCase() || "PENDING"}
+          </Text>
+        </View>
+
+        {/* Origin Location */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="location" size={24} color="#4CAF50" />
-            <Text style={styles.cardTitle}>Pickup Location</Text>
+            <Text style={styles.cardTitle}>Origin City</Text>
           </View>
-          <Text style={styles.locationText}>{orderData.pickupLocation || "Not specified"}</Text>
+          <Text style={styles.locationText}>{orderData.originCity || "Not specified"}</Text>
         </View>
 
-        {/* Drop Location */}
+        {/* Destination Location */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="flag" size={24} color="#FF3B30" />
-            <Text style={styles.cardTitle}>Drop Location</Text>
+            <Text style={styles.cardTitle}>Destination City</Text>
           </View>
-          <Text style={styles.locationText}>{orderData.dropLocation || "Not specified"}</Text>
+          <Text style={styles.locationText}>{orderData.destinationCity || "Not specified"}</Text>
         </View>
+
+        {/* Sender Details */}
+        {(orderData.senderName || orderData.senderAddress || orderData.senderPhone) && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="person" size={24} color="#4CAF50" />
+              <Text style={styles.cardTitle}>Sender Details</Text>
+            </View>
+            {orderData.senderName && (
+              <Text style={styles.detailText}>Name: {orderData.senderName}</Text>
+            )}
+            {orderData.senderAddress && (
+              <Text style={styles.detailText}>Address: {orderData.senderAddress}</Text>
+            )}
+            {orderData.senderPhone && (
+              <Text style={styles.detailText}>Phone: {orderData.senderPhone}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Receiver Details */}
+        {(orderData.receiverName || orderData.receiverAddress || orderData.receiverPhone) && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="person" size={24} color="#FF3B30" />
+              <Text style={styles.cardTitle}>Receiver Details</Text>
+            </View>
+            {orderData.receiverName && (
+              <Text style={styles.detailText}>Name: {orderData.receiverName}</Text>
+            )}
+            {orderData.receiverAddress && (
+              <Text style={styles.detailText}>Address: {orderData.receiverAddress}</Text>
+            )}
+            {orderData.receiverPhone && (
+              <Text style={styles.detailText}>Phone: {orderData.receiverPhone}</Text>
+            )}
+          </View>
+        )}
 
         {/* Package Details */}
         {(orderData.packageType || orderData.weight) && (
@@ -75,6 +247,9 @@ const OrderConfirmation = ({ navigation, route }) => {
             {orderData.categoryName && (
               <Text style={styles.detailText}>Category: {orderData.categoryName}</Text>
             )}
+            {orderData.distance && (
+              <Text style={styles.detailText}>Distance: {orderData.distance.toFixed(2)} km</Text>
+            )}
           </View>
         )}
 
@@ -84,7 +259,7 @@ const OrderConfirmation = ({ navigation, route }) => {
             <Ionicons name="cash-outline" size={24} color="#FF9800" />
             <Text style={styles.cardTitle}>Total Charges</Text>
           </View>
-          <Text style={styles.chargesText}>{totalCharges}</Text>
+          <Text style={styles.chargesText}>{formatPrice(orderData.price, orderData.distance, pricePerKm)}</Text>
         </View>
 
         {/* Estimated Delivery Time */}
@@ -93,19 +268,47 @@ const OrderConfirmation = ({ navigation, route }) => {
             <Ionicons name="time-outline" size={24} color="#2196F3" />
             <Text style={styles.cardTitle}>Estimated Delivery Time</Text>
           </View>
-          <Text style={styles.deliveryText}>{estimatedDelivery}</Text>
+          <Text style={styles.deliveryText}>{getEstimatedDelivery()}</Text>
         </View>
 
-        {/* Rider Assignment Status */}
+        {/* Info Message based on Status */}
         <View style={[styles.card, styles.infoCard]}>
           <Ionicons name="information-circle-outline" size={24} color="#666" />
-          <Text style={styles.infoText}>A rider will be assigned soon. You'll receive a notification when your package is picked up.</Text>
+          <Text style={styles.infoText}>
+            {orderData.status === "pending" 
+              ? "Your order is pending approval. A rider will be assigned once approved."
+              : orderData.status === "approved"
+              ? "Your order has been approved. A rider will be assigned soon."
+              : orderData.status === "in_transit" || orderData.status === "in transit"
+              ? "Your package is on the way. You'll receive updates on delivery."
+              : orderData.status === "delivered"
+              ? "Your package has been delivered successfully!"
+              : orderData.status === "cancelled"
+              ? "Your order has been cancelled. Please contact support if you have questions."
+              : "You'll receive notifications as your order status updates."}
+          </Text>
         </View>
 
         {/* Action Buttons */}
         <TouchableOpacity 
           style={styles.primaryButton}
-          onPress={() => navigation.navigate("MyOrders")}
+          onPress={() => {
+            // Navigate to CustomerHome and reset to MyOrders tab
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: "CustomerHome",
+                    state: {
+                      routes: [{ name: "MyOrders" }],
+                      index: 0,
+                    },
+                  },
+                ],
+              })
+            );
+          }}
         >
           <Ionicons name="list-outline" size={20} color="#FFFFFF" />
           <Text style={styles.primaryButtonText}>Go to My Orders</Text>
@@ -247,6 +450,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginLeft: 10,
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 18,
+    color: "#F44336",
+    fontWeight: "600",
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 4,
   },
 });
 

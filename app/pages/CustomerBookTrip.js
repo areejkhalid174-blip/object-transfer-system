@@ -6,24 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-// Platform-specific import for maps
-import { Platform } from 'react-native';
-
-let MapView, Marker;
-
-if (Platform.OS === 'web') {
-  const WebMaps = require('../../components/WebMapView');
-  MapView = WebMaps.MapView;
-  Marker = WebMaps.Marker;
-} else {
-  const ReactNativeMaps = require('react-native-maps');
-  MapView = ReactNativeMaps.default;
-  Marker = ReactNativeMaps.Marker;
-}
 import * as Location from "expo-location";
 import { db } from "../../firebase"; // apna firebase config
 import { collection, addDoc } from "firebase/firestore";
 import { useSelector } from "react-redux"; // customerId redux se milega
+// Import react-native-maps for mobile only
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 export default function CustomerBookTrip({ navigation }) {
   const [pickup, setPickup] = useState("");
@@ -107,6 +95,7 @@ export default function CustomerBookTrip({ navigation }) {
       {/* Map View */}
       <View style={styles.mapContainer}>
         <MapView
+          provider={PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={{
             latitude: 33.6844,

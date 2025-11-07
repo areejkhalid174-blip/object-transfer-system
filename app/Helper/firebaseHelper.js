@@ -14,6 +14,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "../../firebase"; // make sure you export both db and auth in firebase.js
 
@@ -80,6 +81,27 @@ export const deleteData = async (collectionName, id) => {
     console.log("Document deleted successfully");
   } catch (e) {
     console.error("Error deleting document: ", e);
+  }
+};
+
+// ✅ Real-time listener for document changes
+export const subscribeToDocument = (collectionName, id, callback) => {
+  try {
+    const docRef = doc(db, collectionName, id);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        callback({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error("Error listening to document:", error);
+      callback(null);
+    });
+    return unsubscribe;
+  } catch (e) {
+    console.error("Error setting up listener:", e);
+    return () => {};
   }
 };
 

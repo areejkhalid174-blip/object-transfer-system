@@ -1,14 +1,18 @@
+import { Ionicons } from "@expo/vector-icons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Alert,
   ScrollView,
   StyleSheet,
   Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useDispatch } from "react-redux";
+import { logout } from "../Helper/firebaseHelper";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -522,6 +526,7 @@ const ProfileScreen = ({ navigation }) => {
 
 // Settings Screen
 const SettingsScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
@@ -529,6 +534,37 @@ const SettingsScreen = ({ navigation }) => {
 
   const handleChangePassword = () => {
     alert("Change Password functionality coming soon!");
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Logout from Firebase
+              await logout();
+              // Clear Redux state
+              dispatch(setRole(""));
+              dispatch(setUser({}));
+            } catch (error) {
+              console.error("Logout error:", error);
+              // Still clear the state even if Firebase logout fails
+              dispatch(setRole(""));
+              dispatch(setUser({}));
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -684,7 +720,7 @@ const SettingsScreen = ({ navigation }) => {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
