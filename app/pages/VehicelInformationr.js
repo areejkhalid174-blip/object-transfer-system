@@ -1,17 +1,17 @@
+import { Ionicons } from "@expo/vector-icons";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  TextInput,
-  ScrollView,
-  Image,
-  Alert,
-  ActivityIndicator,
 } from "react-native";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { useSelector } from "react-redux";
 import { addData, uploadImageToCloudinary } from "../Helper/firebaseHelper";
 
@@ -136,7 +136,7 @@ const VehicelInformationr = ({ navigation }) => {
               flex: 1,
             }}
           >
-            Verification- 2/3
+            Verification- 1/2
           </Text>
         </View>
         <Text

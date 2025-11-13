@@ -1,13 +1,13 @@
 
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Switch, Alert, TextInput } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
 import { Ionicons } from "@expo/vector-icons";
-import { useSelector, useDispatch } from "react-redux";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import { useEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
+import { useDispatch, useSelector } from "react-redux";
 import { getAllData } from "../Helper/firebaseHelper";
 import Colors from "../constants/colors";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useNavigation, CommonActions } from "@react-navigation/native";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
@@ -534,6 +534,8 @@ const SettingsScreen = ({ navigation }) => {
   const user = useSelector((state) => state.home?.user);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
+  const [supportAgent, setSupportAgent] = useState(null);
+  const [loadingSupport, setLoadingSupport] = useState(true);
 
   const handleLogout = () => {
     Alert.alert(
@@ -551,15 +553,62 @@ const SettingsScreen = ({ navigation }) => {
             // Clear Redux state
             dispatch(setRole(""));
             dispatch(setUser({}));
-            // Navigate to login screen
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "CustomerLogin" }],
-            });
+            
           }
         }
       ]
     );
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSupportAgent = async () => {
+      try {
+        setLoadingSupport(true);
+        const users = await getAllData("users");
+        const adminUser = users.find(
+          (item) => item?.role?.toLowerCase?.() === "admin"
+        );
+        if (isMounted) {
+          setSupportAgent(adminUser || null);
+        }
+      } catch (error) {
+        console.error("Error fetching support agent:", error);
+        if (isMounted) {
+          setSupportAgent(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingSupport(false);
+        }
+      }
+    };
+
+    fetchSupportAgent();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleContactSupport = () => {
+    if (!user?.uid) {
+      Alert.alert("Login Required", "Please login again to contact support.");
+      return;
+    }
+    if (!supportAgent?.uid) {
+      Alert.alert("Support Unavailable", "No support agent is currently configured.");
+      return;
+    }
+
+    const agentName = `${supportAgent?.fName || ""} ${supportAgent?.lName || ""}`.trim()
+      || supportAgent?.email
+      || "Support";
+
+    navigation.navigate("DirectChat", {
+      currentUserId: user.uid,
+      otherUserId: supportAgent.uid,
+      otherUserName: agentName,
+    });
   };
 
   return (
@@ -651,6 +700,29 @@ const SettingsScreen = ({ navigation }) => {
 
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Support</Text>
+
+          <TouchableOpacity
+            style={[
+              styles.optionItem,
+              (!supportAgent || !user?.uid) && { opacity: 0.6 },
+            ]}
+            onPress={handleContactSupport}
+            disabled={!supportAgent || !user?.uid}
+          >
+            <Ionicons name="headset-outline" size={22} color="#000" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.optionText}>Contact Support</Text>
+              <Text style={{ fontSize: 12, color: "#666" }}>
+                {loadingSupport
+                  ? "Fetching available agents..."
+                  : supportAgent
+                  ? `${supportAgent?.fName || ""} ${supportAgent?.lName || ""}`.trim() ||
+                    supportAgent?.email
+                  : "No support agent found"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.optionItem}

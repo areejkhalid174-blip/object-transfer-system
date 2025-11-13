@@ -1,35 +1,35 @@
-import 'react-native-gesture-handler';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native";
+import 'react-native-gesture-handler';
 import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 // Rider
 import Mobile from "./pages/Mobile";
 import RiderChat from "./pages/RiderChat";
-import RiderOtp from "./pages/RiderOtp";
+import RiderHome from "./pages/RiderHome";
 import RiderLogin from "./pages/RiderLogin";
+import RiderOtp from "./pages/RiderOtp";
 import RiderSignup from "./pages/RiderSignup";
-import RiderVerification from "./pages/RiderVerification";
+import SetMode from "./pages/SetMode";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
-import VehicelInformationr from "./pages/VehicelInformationr";
-import SetMode from "./pages/SetMode";
-import RiderHome from "./pages/RiderHome";
 import TripDetails from "./pages/TripDetails";
+import VehicelInformationr from "./pages/VehicelInformationr";
 
 // Customer
+import CustomerBookTrip from "./pages/CustomerBookTrip";
 import CustomerChat from "./pages/CustomerChat";
 import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
+import DirectChat from "./pages/DirectChat";
+import MapSelector from "./pages/MapSelector";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import PackageDetail from "./pages/PackageDetail";
 import RatingCustomer from "./pages/RatingCustomer";
 import SelectDate from "./pages/SelectDate";
-import Vehicle from "./pages/Vehicle";
-import CustomerBookTrip from "./pages/CustomerBookTrip";
 import SplashScreen from "./pages/SplashScreen";
-import PackageDetail from "./pages/PackageDetail";
-import OrderConfirmation from "./pages/OrderConfirmation";
-import MapSelector from "./pages/MapSelector";
+import Vehicle from "./pages/Vehicle";
 
 import RoleSelection from "./pages/select";
 import VehicleSelection from "./pages/Vehicle";
@@ -41,7 +41,6 @@ const RiderStack = () => (
   <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
     <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
     <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
-    <Stack.Screen name="RiderVerification" component={RiderVerification} options={{ headerShown: false }} />
     <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
     <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
     <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
@@ -51,6 +50,7 @@ const RiderStack = () => (
     <Stack.Screen name="Setting" component={Setting} />
     <Stack.Screen name="TripDetails" component={TripDetails} />
     <Stack.Screen name="RiderChat" component={RiderChat} />
+    <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
 
   </Stack.Navigator>
 );
@@ -71,6 +71,7 @@ const CustomerStack = () => (
     {/* <Stack.Screen name="select" component={select} /> */}
     <Stack.Screen name="CustomerBookTrip" component={CustomerBookTrip} />
     <Stack.Screen name="CustomerChat" component={CustomerChat} />
+    <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
 
   </Stack.Navigator>
 );
@@ -82,32 +83,57 @@ const App = () => {
     const user = useSelector((state) => state.home.user);
     const isLoggedIn = user && Object.keys(user).length > 0;
 
-    // If user is logged in, show their respective stack
-    if (isLoggedIn && userRole === "Customer") {
-      return <CustomerStack />;
-    }
-    if (isLoggedIn && userRole === "Rider") {
-      return <RiderStack />;
+    if (!isLoggedIn) {
+      return (
+        <Stack.Navigator
+          key="auth-stack"
+          initialRouteName="CustomerLogin"
+          screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}
+        >
+          <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
+          <Stack.Screen name="Select" component={RoleSelection} options={{ headerShown: false }} />
+          <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CustomerSignup" component={CustomerSignup} options={{ headerShown: false }} />
+          <Stack.Screen name="RiderLogin" component={RiderLogin} options={{ headerShown: false }} />
+          <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
+          <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
+          <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
+          <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
+          <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
+          <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
+          <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
+        <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      );
     }
 
-    // If not logged in, show authentication flow starting with CustomerLogin
-    return (
-      <Stack.Navigator initialRouteName="CustomerLogin" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
-        <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
-        <Stack.Screen name="Select" component={RoleSelection} options={{ headerShown: false }} />
-        <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="CustomerSignup" component={CustomerSignup} options={{ headerShown: false }} />
-        <Stack.Screen name="RiderLogin" component={RiderLogin} options={{ headerShown: false }} />
-        <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
-        <Stack.Screen name="RiderVerification" component={RiderVerification} options={{ headerShown: false }} />
-        <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
-        <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
-        <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
-        <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
-        <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
-        <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
-      </Stack.Navigator>
-    );
+    switch (userRole) {
+      case "Customer":
+        return <CustomerStack key="customer-stack" />;
+      case "Rider":
+        return <RiderStack key="rider-stack" />;
+      default:
+        return (
+          <Stack.Navigator
+            key="auth-stack"
+            initialRouteName="CustomerLogin"
+            screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}
+          >
+            <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
+            <Stack.Screen name="Select" component={RoleSelection} options={{ headerShown: false }} />
+            <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CustomerSignup" component={CustomerSignup} options={{ headerShown: false }} />
+            <Stack.Screen name="RiderLogin" component={RiderLogin} options={{ headerShown: false }} />
+            <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
+            <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
+            <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
+            <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
+            <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
+            <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
+            <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
+          </Stack.Navigator>
+        );
+    }
   };
 
   return (

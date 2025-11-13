@@ -13,7 +13,7 @@ export default function SupportingDocuments({ navigation }) {
 
   const goToNext = () => {
     console.log("License:", license);
-    navigation.navigate("RiderVerification"); // ✅ Navigate to Setting page
+    navigation.navigate("VehicelInformationr"); // Proceed to vehicle information step
   };
 
   return (
@@ -67,7 +67,7 @@ export default function SupportingDocuments({ navigation }) {
 
       {/* Go to Setting Page Button */}
       <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={goToNext}>
-        <Text style={styles.buttonText}>Go to RiderVerification</Text>
+        <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
     </ScrollView>
   );

@@ -21,7 +21,7 @@ export default function SetMode({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <Ionicons name="arrow-back" size={24} color="#000000" onPress={() => navigation.goBack()} />
-        <Text style={styles.headerText}>Verification- 3/3</Text>
+        <Text style={styles.headerText}>Verification- 2/2</Text>
       </View>
       <Text style={styles.subHeaderText}>Register your driver mode as:</Text>
 

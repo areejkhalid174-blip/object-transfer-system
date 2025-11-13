@@ -97,7 +97,7 @@ const RiderSignup = ({ navigation }) => {
       if (result?.success) {
         dispatch(setRole("Rider"));
         dispatch(setUser(result.data));
-        navigation.replace("RiderVerification"); // Navigate to Rider Verification page
+        navigation.replace("VehicelInformationr"); // Navigate directly to vehicle information step
       } else {
         alert(result?.error || "Error in sign up");
       }
