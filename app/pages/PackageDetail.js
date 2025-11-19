@@ -14,11 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useSelector } from "react-redux";
 import { uploadImageToCloudinary } from "../Helper/cloudinaryHelper";
-import { addData } from "../Helper/firebaseHelper";
+import { addData, getAllData } from "../Helper/firebaseHelper";
 
 const PackageDetail = ({ navigation, route }) => {
   const { categoryId, categoryName } = route?.params || {};
 
+  // Parcel type selection: null = not selected, "withinCity" = within city, "outOfCity" = out of city
+  const [parcelType, setParcelType] = useState(null);
   const [originCity, setOriginCity] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
   const [originLat, setOriginLat] = useState(null);
@@ -43,6 +45,11 @@ const PackageDetail = ({ navigation, route }) => {
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
+  
+  // For within-city orders
+  const [totalKm, setTotalKm] = useState("");
+  const [priceOf1Km, setPriceOf1Km] = useState(null);
+  const [loadingCityPrice, setLoadingCityPrice] = useState(false);
 
   // Get user from Redux
   const user = useSelector((state) => state.home?.user);
@@ -52,6 +59,54 @@ const PackageDetail = ({ navigation, route }) => {
     { id: "medium", label: "Medium", icon: "cube", description: "5kg - 15kg" },
     { id: "large", label: "Large", icon: "cube-sharp", description: "15kg+" },
   ];
+
+  // Fetch cityPrice when within-city is selected
+  useEffect(() => {
+    const fetchCityPrice = async () => {
+      if (parcelType === "withinCity") {
+        setLoadingCityPrice(true);
+        try {
+          const cityPriceData = await getAllData("cityPrice");
+          if (cityPriceData && cityPriceData.length > 0) {
+            // Get the first document's priceOf1Km
+            const price = cityPriceData[0].priceOf1Km;
+            setPriceOf1Km(price ? parseFloat(price) : null);
+          } else {
+            Alert.alert("Error", "City price data not found. Please contact support.");
+            setPriceOf1Km(null);
+          }
+        } catch (error) {
+          console.error("Error fetching city price:", error);
+          Alert.alert("Error", "Failed to load city price. Please try again.");
+          setPriceOf1Km(null);
+        } finally {
+          setLoadingCityPrice(false);
+        }
+      } else {
+        // Reset when switching away from within-city
+        setPriceOf1Km(null);
+        setTotalKm("");
+        setCalculatedPrice(null);
+      }
+    };
+
+    fetchCityPrice();
+  }, [parcelType]);
+
+  // Calculate price for within-city orders
+  useEffect(() => {
+    if (parcelType === "withinCity" && totalKm && priceOf1Km) {
+      const km = parseFloat(totalKm);
+      if (!isNaN(km) && km > 0) {
+        const price = km * priceOf1Km;
+        setCalculatedPrice(price.toFixed(2));
+        setDistance(km); // Set distance as km for within-city
+      } else {
+        setCalculatedPrice(null);
+        setDistance(null);
+      }
+    }
+  }, [totalKm, priceOf1Km, parcelType]);
 
   // Listen for city selection from CitySelector
   useEffect(() => {
@@ -186,10 +241,35 @@ const PackageDetail = ({ navigation, route }) => {
   };
 
   const placeOrder = async () => {
-    // Validation
-    if (!originCity || !destinationCity) {
-      Alert.alert("Error", "Please select origin and destination cities");
+    // Validation for parcel type selection
+    if (!parcelType) {
+      Alert.alert("Error", "Please select parcel type (Within city or Out of city)");
       return;
+    }
+
+    // Validation for out-of-city orders
+    if (parcelType === "outOfCity") {
+      if (!originCity || !destinationCity) {
+        Alert.alert("Error", "Please select origin and destination cities");
+        return;
+      }
+    }
+
+    // Validation for within-city orders
+    if (parcelType === "withinCity") {
+      if (!totalKm.trim()) {
+        Alert.alert("Error", "Please enter total kilometers");
+        return;
+      }
+      const km = parseFloat(totalKm);
+      if (isNaN(km) || km <= 0) {
+        Alert.alert("Error", "Please enter a valid number of kilometers");
+        return;
+      }
+      if (!priceOf1Km) {
+        Alert.alert("Error", "City price data not available. Please try again.");
+        return;
+      }
     }
     if (!senderName.trim() || !senderAddress.trim() || !senderPhone.trim()) {
       Alert.alert("Error", "Please fill in all sender details");
@@ -234,13 +314,16 @@ const PackageDetail = ({ navigation, route }) => {
         customerEmail: user.email,
         categoryId: categoryId || null,
         categoryName: categoryName || "General Delivery",
-        originCity,
-        originLat,
-        originLng,
-        destinationCity,
-        destinationLat,
-        destinationLng,
+        parcelType: parcelType, // "withinCity" or "outOfCity"
+        originCity: parcelType === "outOfCity" ? originCity : null,
+        originLat: parcelType === "outOfCity" ? originLat : null,
+        originLng: parcelType === "outOfCity" ? originLng : null,
+        destinationCity: parcelType === "outOfCity" ? destinationCity : null,
+        destinationLat: parcelType === "outOfCity" ? destinationLat : null,
+        destinationLng: parcelType === "outOfCity" ? destinationLng : null,
         distance: distance || 0,
+        totalKm: parcelType === "withinCity" ? parseFloat(totalKm) : null,
+        priceOf1Km: parcelType === "withinCity" ? priceOf1Km : null,
         price: calculatedPrice ? parseFloat(calculatedPrice) : null,
         packageType,
         weight: cleanWeight,
@@ -293,7 +376,73 @@ const PackageDetail = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* City Selection */}
+        {/* Parcel Type Selection */}
+        {!parcelType && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Select Parcel Type</Text>
+            <View style={styles.parcelTypeContainer}>
+              <TouchableOpacity
+                style={styles.parcelTypeCard}
+                onPress={() => setParcelType("withinCity")}
+              >
+                <Ionicons name="location" size={32} color="#2c5aa0" />
+                <Text style={styles.parcelTypeLabel}>Within the City</Text>
+                <Text style={styles.parcelTypeDescription}>Local delivery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.parcelTypeCard}
+                onPress={() => setParcelType("outOfCity")}
+              >
+                <Ionicons name="map-outline" size={32} color="#2c5aa0" />
+                <Text style={styles.parcelTypeLabel}>Out of City</Text>
+                <Text style={styles.parcelTypeDescription}>Inter-city delivery</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Show selected parcel type with option to change */}
+        {parcelType && (
+          <View style={styles.section}>
+            <View style={styles.selectedParcelTypeContainer}>
+              <View style={styles.selectedParcelTypeInfo}>
+                <Ionicons 
+                  name={parcelType === "withinCity" ? "location" : "map-outline"} 
+                  size={20} 
+                  color="#2c5aa0" 
+                />
+                <Text style={styles.selectedParcelTypeText}>
+                  {parcelType === "withinCity" ? "Within the City" : "Out of City"}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => {
+                setParcelType(null);
+                // Reset all related fields
+                setOriginCity("");
+                setDestinationCity("");
+                setOriginLat(null);
+                setOriginLng(null);
+                setDestinationLat(null);
+                setDestinationLng(null);
+                setDistance(null);
+                setCalculatedPrice(null);
+                setTotalKm("");
+                setPriceOf1Km(null);
+                setSenderName("");
+                setSenderAddress("");
+                setSenderPhone("");
+                setReceiverName("");
+                setReceiverAddress("");
+                setReceiverPhone("");
+              }}>
+                <Text style={styles.changeParcelTypeText}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* City Selection - Only show for out-of-city orders */}
+        {parcelType === "outOfCity" && (
         <View style={styles.section}>
           <Text style={styles.label}>Origin & Destination</Text>
           <TouchableOpacity 
@@ -369,6 +518,136 @@ const PackageDetail = ({ navigation, route }) => {
             </View>
           )}
         </View>
+        )}
+
+        {/* Within City - KM Input and Price Calculation */}
+        {parcelType === "withinCity" && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Distance & Price</Text>
+            
+            {loadingCityPrice ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading price data...</Text>
+              </View>
+            ) : (
+              <>
+                {/* Total KM Input */}
+                <View style={styles.inputContainer}>
+                  <Ionicons name="navigate-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    value={totalKm}
+                    onChangeText={(text) => {
+                      // Only allow numbers and decimal point
+                      const cleaned = text.replace(/[^0-9.]/g, '');
+                      setTotalKm(cleaned);
+                    }}
+                    style={styles.input}
+                    placeholder="Enter total kilometers"
+                    placeholderTextColor="#999"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unitText}>km</Text>
+                </View>
+
+                {/* Price Display */}
+                {priceOf1Km && (
+                  <View style={styles.priceInfoContainer}>
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>Price per km:</Text>
+                      <Text style={styles.priceValue}>₹{priceOf1Km}</Text>
+                    </View>
+                    {totalKm && calculatedPrice && (
+                      <>
+                        <View style={styles.priceRow}>
+                          <Text style={styles.priceLabel}>Total km:</Text>
+                          <Text style={styles.priceValue}>{totalKm} km</Text>
+                        </View>
+                        <View style={[styles.priceRow, styles.totalPriceRow]}>
+                          <Text style={styles.totalPriceLabel}>Total Price:</Text>
+                          <Text style={styles.totalPriceValue}>₹{calculatedPrice}</Text>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                )}
+
+                {/* Sender & Receiver Details Input for Within City */}
+                <View style={styles.section}>
+                  <Text style={styles.label}>Sender Details</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={senderName}
+                      onChangeText={setSenderName}
+                      style={styles.input}
+                      placeholder="Sender name"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { marginTop: 10 }]}>
+                    <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={senderAddress}
+                      onChangeText={setSenderAddress}
+                      style={styles.input}
+                      placeholder="Sender address"
+                      placeholderTextColor="#999"
+                      multiline
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { marginTop: 10 }]}>
+                    <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={senderPhone}
+                      onChangeText={setSenderPhone}
+                      style={styles.input}
+                      placeholder="Sender phone"
+                      placeholderTextColor="#999"
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.label}>Receiver Details</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={receiverName}
+                      onChangeText={setReceiverName}
+                      style={styles.input}
+                      placeholder="Receiver name"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { marginTop: 10 }]}>
+                    <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={receiverAddress}
+                      onChangeText={setReceiverAddress}
+                      style={styles.input}
+                      placeholder="Receiver address"
+                      placeholderTextColor="#999"
+                      multiline
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { marginTop: 10 }]}>
+                    <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                      value={receiverPhone}
+                      onChangeText={setReceiverPhone}
+                      style={styles.input}
+                      placeholder="Receiver phone"
+                      placeholderTextColor="#999"
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        )}
 
         {/* Package Size Selection */}
         <View style={styles.section}>
@@ -782,6 +1061,75 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 2,
+  },
+  parcelTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  parcelTypeCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+  },
+  parcelTypeCardSelected: {
+    borderColor: "#2c5aa0",
+    backgroundColor: "#E3F2FD",
+  },
+  parcelTypeLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2c5aa0",
+    marginTop: 10,
+  },
+  parcelTypeDescription: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+  },
+  selectedParcelTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+  },
+  selectedParcelTypeInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectedParcelTypeText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 10,
+  },
+  changeParcelTypeText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2c5aa0",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    marginLeft: 10,
+  },
+  priceInfoContainer: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 10,
   },
 });
 
