@@ -5,8 +5,10 @@ import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllData } from "../Helper/firebaseHelper";
+import { fetchUserChats, subscribeToUserChats, formatChatTime } from "../Helper/chatHelper";
 import Colors from "../constants/colors";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
@@ -15,8 +17,10 @@ const Tab = createBottomTabNavigator();
 // Dashboard Screen
 const DashboardScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState(null); // state for selected option
   const [data, setData] = useState([]); // state for data
+  const [unreadCount, setUnreadCount] = useState(0); // unread notifications count
   const user = useSelector((state) => state.home?.user); // Get logged-in user
   
   // const options = [
@@ -31,16 +35,40 @@ const DashboardScreen = () => {
     setData(cDAta);
   };
 
+  const getUnreadNotificationCount = async () => {
+    try {
+      const allNotifications = await getAllData("notifications");
+      const unread = allNotifications.filter(
+        (notif) =>
+          (notif.userId === user?.uid || notif.userEmail === user?.email) &&
+          !notif.read
+      );
+      setUnreadCount(unread.length);
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      setUnreadCount(0);
+    }
+  };
+
   useEffect(() => {
     getCatData();
+    getUnreadNotificationCount();
   }, []);
+
+  // Refresh unread count when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      getUnreadNotificationCount();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const logOut = () =>{
     
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]} showsVerticalScrollIndicator={false}>
       {/* Header with Notification Bell */}
       <View style={styles.header}>
         <View>
@@ -49,12 +77,16 @@ const DashboardScreen = () => {
         </View>
         <TouchableOpacity 
           style={styles.notificationButton}
-          onPress={() => alert("Notifications")}
+          onPress={() => navigation.navigate("Notifications")}
         >
           <Icon name="notifications-outline" size={28} color="#FFFFFF" />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>3</Text>
-          </View>
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
       
@@ -137,21 +169,6 @@ const DashboardScreen = () => {
         <Text style={styles.sendPackageText}>Send New Package</Text>
       </TouchableOpacity>
 
-      {/* Book a Trip Button */}
-      <TouchableOpacity 
-        style={styles.bookTripButton}
-        onPress={() => {
-          console.log("Book a Trip clicked");
-          try {
-            navigation.navigate("CustomerBookTrip");
-          } catch (error) {
-            console.error("Navigation error:", error);
-          }
-        }}
-      >
-        <Icon name="car-outline" size={24} color="#000000" />
-        <Text style={styles.bookTripText}>Book a Trip</Text>
-      </TouchableOpacity>
 
       {/* <TouchableOpacity onPress={logOut}>
         <Text style={{ textAlign: "center", color: "#1c1b1fff", marginTop: 20 }}>
@@ -164,6 +181,7 @@ const DashboardScreen = () => {
 
 // My Orders Screen
 const MyOrdersScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = useSelector((state) => state.home?.user);
@@ -249,7 +267,7 @@ const MyOrdersScreen = ({ navigation, route }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>My Orders</Text>
         
         {loading ? (
@@ -355,18 +373,100 @@ const MyOrdersScreen = ({ navigation, route }) => {
 };
 
 // Chat Screen
-const ChatScreen = () => {
+const ChatScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+  const user = useSelector((state) => state.home?.user);
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+
+    // Subscribe to real-time chat updates
+    const unsubscribeChats = subscribeToUserChats(user.uid, (updatedChats) => {
+      setChats(updatedChats);
+      setLoading(false);
+    });
+
+    // Also refresh when screen comes into focus
+    const unsubscribeFocus = navigation.addListener('focus', async () => {
+      setLoading(true);
+      const freshChats = await fetchUserChats(user.uid);
+      setChats(freshChats);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeChats();
+      unsubscribeFocus();
+    };
+  }, [user?.uid, navigation]);
+
+  const handleChatPress = (chat) => {
+    navigation.navigate("DirectChat", {
+      currentUserId: user?.uid,
+      otherUserId: chat.otherUserId,
+      otherUserName: chat.otherUserName || `User ${chat.otherUserId.substring(0, 8)}`,
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Chat</Text>
-        <View style={styles.emptyState}>
-          <Ionicons name="chatbubbles-outline" size={50} color="#888" />
-          <Text style={styles.emptyText}>No messages</Text>
-          <Text style={styles.emptySubtext}>
-            Your conversations will appear here
-          </Text>
-        </View>
+        
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Loading chats...</Text>
+          </View>
+        ) : chats.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubbles-outline" size={50} color="#888" />
+            <Text style={styles.emptyText}>No chats yet</Text>
+            <Text style={styles.emptySubtext}>
+              Your chats will appear here
+            </Text>
+          </View>
+        ) : (
+          <ScrollView style={styles.conversationsList}>
+            {chats.map((chat, index) => (
+              <TouchableOpacity
+                key={chat.chatId || index}
+                style={styles.conversationItem}
+                onPress={() => handleChatPress(chat)}
+              >
+                <View style={styles.conversationAvatar}>
+                  <Ionicons name="person" size={24} color="#538cc6" />
+                </View>
+                <View style={styles.conversationContent}>
+                  <View style={styles.conversationHeader}>
+                    <Text style={styles.conversationName}>
+                      {chat.otherUserName || `User ${chat.otherUserId.substring(0, 8)}`}
+                    </Text>
+                    {chat.lastMessageTime && (
+                      <Text style={styles.conversationTime}>
+                        {formatChatTime(chat.lastMessageTime)}
+                      </Text>
+                    )}
+                  </View>
+                  {chat.lastMessage ? (
+                    <Text style={styles.conversationLastMessage} numberOfLines={1}>
+                      {chat.senderId === user?.uid ? "You: " : ""}{chat.lastMessage}
+                    </Text>
+                  ) : (
+                    <Text style={styles.conversationLastMessage} numberOfLines={1}>
+                      Start conversation
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#999" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -374,6 +474,7 @@ const ChatScreen = () => {
 
 // Profile Screen
 const ProfileScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const user = useSelector((state) => state.home?.user);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.firstName || "");
@@ -396,7 +497,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Profile</Text>
 
         <View style={styles.profileCard}>
@@ -530,6 +631,7 @@ const ProfileScreen = ({ navigation }) => {
 
 // Settings Screen
 const SettingsScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.home?.user);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -606,14 +708,14 @@ const SettingsScreen = ({ navigation }) => {
 
     navigation.navigate("DirectChat", {
       currentUserId: user.uid,
-      otherUserId: supportAgent.uid,
+      otherUserId: "NPoKBq3LCLTDLCZYOf36xyoVDvN2",
       otherUserName: agentName,
     });
   };
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Settings</Text>
 
         {/* Account Info Card */}
@@ -756,6 +858,8 @@ const SettingsScreen = ({ navigation }) => {
 
 // Main CustomerHome Component with Bottom Tabs
 export default function CustomerHome() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -782,8 +886,8 @@ export default function CustomerHome() {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E0E0E0",
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + (insets.bottom > 0 ? insets.bottom - 8 : 0),
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -1021,6 +1125,53 @@ const styles = StyleSheet.create({
     color: "#888888",
     marginTop: 5,
   },
+  conversationsList: {
+    flex: 1,
+  },
+  conversationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  conversationAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#E8F2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  conversationContent: {
+    flex: 1,
+  },
+  conversationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  conversationName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  conversationTime: {
+    fontSize: 12,
+    color: "#999999",
+  },
+  conversationLastMessage: {
+    fontSize: 14,
+    color: "#666666",
+  },
   profileCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
@@ -1208,31 +1359,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
   },
-  orderHistoryButton: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: "#2c5aa0",
-  },
-  orderHistoryButtonText: {
-    color: "#2c5aa0",
-    fontSize: 16,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
   // Settings Account Info
   accountInfoRow: {
     flexDirection: "row",
     alignItems: "center",
     padding: 15,
     backgroundColor: "#F5F5F5",
-    borderRadius: 10,
   },
   accountInfoText: {
     marginLeft: 15,

@@ -24,6 +24,7 @@ import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
 import DirectChat from "./pages/DirectChat";
 import MapSelector from "./pages/MapSelector";
+import Notifications from "./pages/Notifications";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import PackageDetail from "./pages/PackageDetail";
 import RatingCustomer from "./pages/RatingCustomer";
@@ -51,6 +52,7 @@ const RiderStack = () => (
     <Stack.Screen name="TripDetails" component={TripDetails} />
     <Stack.Screen name="RiderChat" component={RiderChat} />
     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+    <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
 
   </Stack.Navigator>
 );
@@ -72,6 +74,7 @@ const CustomerStack = () => (
     <Stack.Screen name="CustomerBookTrip" component={CustomerBookTrip} />
     <Stack.Screen name="CustomerChat" component={CustomerChat} />
     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+    <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
 
   </Stack.Navigator>
 );

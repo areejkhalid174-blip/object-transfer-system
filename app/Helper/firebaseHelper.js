@@ -105,6 +105,29 @@ export const subscribeToDocument = (collectionName, id, callback) => {
   }
 };
 
+// ✅ Create notification
+export const createNotification = async (notificationData) => {
+  try {
+    const notification = {
+      userId: notificationData.userId || null,
+      userEmail: notificationData.userEmail || null,
+      title: notificationData.title || "Notification",
+      message: notificationData.message || "",
+      type: notificationData.type || "general", // order, rider, delivery, payment, general
+      read: false,
+      createdAt: new Date().toISOString(),
+      ...notificationData, // Allow additional fields
+    };
+    
+    const docRef = await addDoc(collection(db, "notifications"), notification);
+    console.log("Notification created with ID: ", docRef.id);
+    return docRef.id;
+  } catch (e) {
+    console.error("Error creating notification: ", e);
+    throw e;
+  }
+};
+
 //--------------------------------
 // 🔹 Firebase Auth Services
 //--------------------------------

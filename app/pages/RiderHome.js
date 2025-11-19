@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   ScrollView,
@@ -10,23 +10,62 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useDispatch } from "react-redux";
-import { logout } from "../Helper/firebaseHelper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, getAllData } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
 
 // Dashboard Screen
 const DashboardScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [isOnline, setIsOnline] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const user = useSelector((state) => state.home?.user);
+
+  const getUnreadNotificationCount = async () => {
+    try {
+      const allNotifications = await getAllData("notifications");
+      const unread = allNotifications.filter(
+        (notif) =>
+          (notif.userId === user?.uid || notif.userEmail === user?.email) &&
+          !notif.read
+      );
+      setUnreadCount(unread.length);
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      setUnreadCount(0);
+    }
+  };
+
+  useEffect(() => {
+    getUnreadNotificationCount();
+    const unsubscribe = navigation.addListener('focus', () => {
+      getUnreadNotificationCount();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Rider Dashboard</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("Notifications")}
+            style={{ position: 'relative' }}
+          >
           <Ionicons name="notifications-outline" size={24} color="#000000" />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Online/Offline Toggle */}
@@ -104,6 +143,7 @@ const DashboardScreen = ({ navigation }) => {
 
 // My Trips Screen
 const MyTripsScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   // Sample trips data - this would come from Firebase in real app
   const trips = [
     {
@@ -234,7 +274,7 @@ const MyTripsScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>My Trips</Text>
         
         {trips.length === 0 ? (
@@ -316,18 +356,179 @@ const MyTripsScreen = ({ navigation }) => {
 };
 
 // Chat Screen
-const ChatScreen = () => {
+const ChatScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+  const user = useSelector((state) => state.home?.user);
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchConversations();
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchConversations();
+    });
+    return unsubscribe;
+  }, []);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      // Get all orders where this rider is assigned
+      const allOrders = await getAllData("orders");
+      const riderOrders = allOrders.filter(
+        (order) => order.riderId === user?.uid
+      );
+
+      // Get unique customers from orders
+      const customerMap = new Map();
+      for (const order of riderOrders) {
+        const customerId = order.userId || order.customerEmail;
+        if (customerId && !customerMap.has(customerId)) {
+          // Get customer details
+          try {
+            const customerData = await getAllData("users");
+            const customer = customerData.find(
+              (c) => c.uid === order.userId || c.email === order.customerEmail
+            );
+            
+            if (customer || order.customerEmail) {
+              // Get last message from chat
+              const conversationId = [user?.uid, order.userId || order.customerEmail].sort().join("_");
+              const lastMessage = await getLastMessage(conversationId);
+              
+              customerMap.set(customerId, {
+                customerId: order.userId || order.customerEmail,
+                customerName: customer
+                  ? (customer.firstName 
+                      ? `${customer.firstName} ${customer.lastName || ""}`.trim()
+                      : customer.displayName || customer.email || "Customer")
+                  : order.customerName || order.customerEmail || "Customer",
+                customerEmail: order.customerEmail || customer?.email,
+                orderId: order.id,
+                lastMessage: lastMessage?.text || "",
+                lastMessageTime: lastMessage?.createdAt || order.updatedAt || order.createdAt,
+              });
+            }
+          } catch (error) {
+            console.error("Error fetching customer data:", error);
+          }
+        }
+      }
+
+      // Convert map to array and sort by last message time
+      const conversationsList = Array.from(customerMap.values()).sort((a, b) => {
+        const timeA = new Date(a.lastMessageTime || 0);
+        const timeB = new Date(b.lastMessageTime || 0);
+        return timeB - timeA;
+      });
+
+      setConversations(conversationsList);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLastMessage = async (conversationId) => {
+    try {
+      const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
+      const { db } = await import("../../firebase");
+      const messagesRef = collection(db, "chats", conversationId, "messages");
+      const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(1));
+      const snapshot = await getDocs(messagesQuery);
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return { id: doc.id, ...doc.data() };
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString();
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const handleChatPress = (customer) => {
+    navigation.navigate("DirectChat", {
+      currentUserId: user?.uid,
+      otherUserId: customer.customerId,
+      otherUserName: customer.customerName,
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Chat</Text>
+        
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Loading conversations...</Text>
+          </View>
+        ) : conversations.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubbles-outline" size={50} color="#888" />
-          <Text style={styles.emptyText}>No messages</Text>
+            <Text style={styles.emptyText}>No conversations</Text>
           <Text style={styles.emptySubtext}>
-            Your conversations will appear here
+              Start chatting with customers from your trips
           </Text>
         </View>
+        ) : (
+          <ScrollView style={styles.conversationsList}>
+            {conversations.map((customer, index) => (
+              <TouchableOpacity
+                key={customer.customerId || index}
+                style={styles.conversationItem}
+                onPress={() => handleChatPress(customer)}
+              >
+                <View style={styles.conversationAvatar}>
+                  <Ionicons name="person" size={24} color="#538cc6" />
+                </View>
+                <View style={styles.conversationContent}>
+                  <View style={styles.conversationHeader}>
+                    <Text style={styles.conversationName}>{customer.customerName}</Text>
+                    {customer.lastMessageTime && (
+                      <Text style={styles.conversationTime}>
+                        {formatTime(customer.lastMessageTime)}
+                      </Text>
+                    )}
+                  </View>
+                  {customer.lastMessage ? (
+                    <Text style={styles.conversationLastMessage} numberOfLines={1}>
+                      {customer.lastMessage}
+                    </Text>
+                  ) : (
+                    <Text style={styles.conversationLastMessage} numberOfLines={1}>
+                      Start conversation
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#999" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -335,6 +536,7 @@ const ChatScreen = () => {
 
 // Profile Screen
 const ProfileScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   // Sample rider data - this would come from Firebase/Redux in real app
   const riderData = {
     name: "Muhammad Ahmed",
@@ -356,7 +558,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Profile</Text>
 
         {/* Profile Header Card */}
@@ -526,6 +728,7 @@ const ProfileScreen = ({ navigation }) => {
 
 // Settings Screen
 const SettingsScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -569,7 +772,7 @@ const SettingsScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>Settings</Text>
 
         {/* Account Settings */}
@@ -734,6 +937,8 @@ const SettingsScreen = ({ navigation }) => {
 
 // Main Home Component with Bottom Tabs
 const RiderHome = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -760,8 +965,8 @@ const RiderHome = () => {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E0E0E0",
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + (insets.bottom > 0 ? insets.bottom - 8 : 0),
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -904,6 +1109,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888888",
     marginTop: 5,
+  },
+  conversationsList: {
+    flex: 1,
+  },
+  conversationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  conversationAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#E8F2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  conversationContent: {
+    flex: 1,
+  },
+  conversationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  conversationName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  conversationTime: {
+    fontSize: 12,
+    color: "#999999",
+  },
+  conversationLastMessage: {
+    fontSize: 14,
+    color: "#666666",
   },
   profileCard: {
     backgroundColor: "#FFFFFF",
@@ -1195,6 +1447,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888888",
     marginBottom: 30,
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
 });
 

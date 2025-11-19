@@ -37,6 +37,9 @@ const PackageDetail = ({ navigation, route }) => {
   const [weight, setWeight] = useState("");
   const [packagePhoto, setPackagePhoto] = useState(null);
   const [packagePhotoUrl, setPackagePhotoUrl] = useState(null); // Cloudinary URL
+  const [paymentProof, setPaymentProof] = useState(null);
+  const [paymentProofUrl, setPaymentProofUrl] = useState(null); // Cloudinary URL
+  const [uploadingPaymentProof, setUploadingPaymentProof] = useState(false);
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
@@ -147,6 +150,41 @@ const PackageDetail = ({ navigation, route }) => {
     }
   };
 
+  const pickPaymentProof = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photos');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (!result.canceled) {
+      const imageUri = result.assets[0].uri;
+      setPaymentProof(imageUri); // Set local preview
+      
+      // Upload to Cloudinary
+      setUploadingPaymentProof(true);
+      try {
+        const cloudinaryUrl = await uploadImageToCloudinary(imageUri);
+        setPaymentProofUrl(cloudinaryUrl); // Save Cloudinary URL
+        Alert.alert('Success', 'Payment proof uploaded successfully!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        Alert.alert('Upload Failed', 'Failed to upload payment proof. Please try again.');
+        setPaymentProof(null); // Clear preview on error
+      } finally {
+        setUploadingPaymentProof(false);
+      }
+    }
+  };
+
   const placeOrder = async () => {
     // Validation
     if (!originCity || !destinationCity) {
@@ -167,6 +205,10 @@ const PackageDetail = ({ navigation, route }) => {
     }
     if (!weight.trim()) {
       Alert.alert("Error", "Please enter package weight");
+      return;
+    }
+    if (!paymentProofUrl) {
+      Alert.alert("Error", "Please upload payment proof");
       return;
     }
 
@@ -203,6 +245,7 @@ const PackageDetail = ({ navigation, route }) => {
         packageType,
         weight: cleanWeight,
         packagePhoto: packagePhotoUrl || null,
+        paymentProof: paymentProofUrl || null,
         additionalNotes: additionalNotes || "",
         senderName: senderName || "",
         senderAddress: senderAddress || "",
@@ -413,6 +456,42 @@ const PackageDetail = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Payment Proof Upload */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Payment Proof (Required)</Text>
+          <TouchableOpacity 
+            style={styles.photoButton} 
+            onPress={pickPaymentProof}
+            disabled={uploadingPaymentProof}
+          >
+            {uploadingPaymentProof ? (
+              <View style={styles.photoPlaceholder}>
+                <ActivityIndicator size="large" color="#2c5aa0" />
+                <Text style={styles.photoText}>Uploading...</Text>
+              </View>
+            ) : paymentProof ? (
+              <View style={styles.photoPreviewContainer}>
+                <Image source={{ uri: paymentProof }} style={styles.photoPreview} />
+                <TouchableOpacity 
+                  style={styles.removePhotoButton}
+                  onPress={() => {
+                    setPaymentProof(null);
+                    setPaymentProofUrl(null);
+                  }}
+                >
+                  <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Ionicons name="receipt-outline" size={40} color="#666" />
+                <Text style={styles.photoText}>Upload Payment Proof</Text>
+                <Text style={styles.photoSubText}>Screenshot or photo of payment</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* Additional Notes */}
         <View style={styles.section}>
           <Text style={styles.label}>Additional Notes (Optional)</Text>
@@ -432,7 +511,7 @@ const PackageDetail = ({ navigation, route }) => {
         <TouchableOpacity 
           style={[styles.placeOrderButton, placingOrder && styles.placeOrderButtonDisabled]} 
           onPress={placeOrder}
-          disabled={placingOrder || uploadingImage}
+          disabled={placingOrder || uploadingImage || uploadingPaymentProof || !paymentProofUrl}
         >
           {placingOrder ? (
             <>
@@ -563,6 +642,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 8,
+  },
+  photoSubText: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 4,
   },
   photoPreviewContainer: {
     position: "relative",
