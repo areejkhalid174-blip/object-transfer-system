@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React, { useState, useEffect } from "react";
+import * as Location from "expo-location";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Switch,
@@ -10,14 +12,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { logout, getAllData, updateData, forgotPassword } from "../Helper/firebaseHelper";
-import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
-import * as Location from "expo-location";
 import { MapView, Marker, PROVIDER_GOOGLE } from "../../components/MapViewWrapper";
+import { forgotPassword, getAllData, updateData } from "../Helper/firebaseHelper";
+import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -939,35 +939,10 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              // Logout from Firebase
-              await logout();
-              // Clear Redux state
-              dispatch(setRole(""));
-              dispatch(setUser({}));
-            } catch (error) {
-              console.error("Logout error:", error);
-              // Still clear the state even if Firebase logout fails
-              dispatch(setRole(""));
-              dispatch(setUser({}));
-            }
-          }
-        }
-      ]
-    );
+  const handleLogout = () => {
+    dispatch(setRole(""));
+    dispatch(setUser({}));
+
   };
 
   return (

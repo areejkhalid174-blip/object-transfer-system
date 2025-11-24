@@ -1,17 +1,17 @@
-import { useState, useEffect } from "react";
-import { 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  View, 
-  StyleSheet, 
-  ScrollView,
-  Image,
-  Alert,
-  ActivityIndicator
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 import { useSelector } from "react-redux";
 import { uploadImageToCloudinary } from "../Helper/cloudinaryHelper";
 import { addData, getAllData } from "../Helper/firebaseHelper";
@@ -790,7 +790,7 @@ const PackageDetail = ({ navigation, route }) => {
         <TouchableOpacity 
           style={[styles.placeOrderButton, placingOrder && styles.placeOrderButtonDisabled]} 
           onPress={placeOrder}
-          disabled={placingOrder || uploadingImage || uploadingPaymentProof || !paymentProofUrl}
+          disabled={false}
         >
           {placingOrder ? (
             <>
