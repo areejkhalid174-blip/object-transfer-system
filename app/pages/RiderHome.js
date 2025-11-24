@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Location from "expo-location";
+import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -15,8 +17,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { MapView, Marker, PROVIDER_GOOGLE } from "../../components/MapViewWrapper";
-import { forgotPassword, getAllData, updateData } from "../Helper/firebaseHelper";
+import { db } from "../../firebase";
+import { formatChatTime } from "../Helper/chatHelper";
+import { forgotPassword, getAllData, getDataById, updateData } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
 const Tab = createBottomTabNavigator();
@@ -30,6 +33,15 @@ const DashboardScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [incomingRequest, setIncomingRequest] = useState(null);
+  const [activeTrips, setActiveTrips] = useState([]);
+  const [todayEarnings, setTodayEarnings] = useState(0);
+  const [weekEarnings, setWeekEarnings] = useState(0);
+  const [monthEarnings, setMonthEarnings] = useState(0);
+  const [totalTrips, setTotalTrips] = useState(0);
+  const [todayTrips, setTodayTrips] = useState(0);
+  const [weekTrips, setWeekTrips] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const getUnreadNotificationCount = async () => {
     try {
@@ -46,13 +58,134 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  const fetchDashboardData = async () => {
+    try {
+      if (!user?.uid) return;
+      
+      setLoading(true);
+      const [allOrders, priceData] = await Promise.all([
+        getAllData("orders"),
+        getAllData("price")
+      ]);
+      
+      // Get default price per km for out-of-city orders
+      const defaultPricePerKm = priceData && priceData.length > 0 
+        ? parseFloat(priceData[0].price || 0) 
+        : 50; // Fallback default
+      
+      // Filter orders for this rider
+      const riderOrders = allOrders.filter(
+        (order) => order.riderId === user.uid
+      );
+
+      // Active trips (assigned, in_progress, in transit)
+      const active = riderOrders.filter(
+        (order) =>
+          order.status &&
+          ["assigned", "in_progress", "in transit", "accepted"].includes(
+            order.status.toLowerCase()
+          )
+      );
+      setActiveTrips(active);
+
+      // Calculate earnings and trips
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let todayEarn = 0;
+      let weekEarn = 0;
+      let monthEarn = 0;
+      let todayCount = 0;
+      let weekCount = 0;
+      let totalCount = 0;
+
+      riderOrders.forEach((order) => {
+        // Use defaultPricePerKm from outer scope
+        const orderDate = order.createdAt
+          ? new Date(order.createdAt)
+          : new Date();
+        
+        // Use riderEarning if available, otherwise calculate or use price as fallback
+        let orderEarning = 0;
+        if (order.riderEarning !== undefined && order.riderEarning !== null) {
+          orderEarning = parseFloat(order.riderEarning);
+        } else {
+          // Calculate earning if not stored
+          if (order.parcelType === "withinCity") {
+            const totalKm = parseFloat(order.totalKm || 0);
+            const pricePerKm = parseFloat(order.priceOf1Km || 0);
+            if (totalKm > 0 && pricePerKm > 0) {
+              orderEarning = totalKm * pricePerKm;
+            }
+          } else {
+            const distance = parseFloat(order.distance || 0);
+            if (distance > 0 && defaultPricePerKm > 0) {
+              orderEarning = distance * defaultPricePerKm;
+            }
+          }
+          // Fallback to order price if calculation fails
+          if (orderEarning === 0) {
+            orderEarning = parseFloat(order.price || 0);
+          }
+        }
+
+        // Completed orders only count for earnings
+        if (
+          order.status &&
+          ["delivered", "completed"].includes(order.status.toLowerCase())
+        ) {
+          if (orderDate >= todayStart) {
+            todayEarn += orderEarning;
+            todayCount++;
+          }
+          if (orderDate >= weekStart) {
+            weekEarn += orderEarning;
+            weekCount++;
+          }
+          if (orderDate >= monthStart) {
+            monthEarn += orderEarning;
+          }
+        }
+
+        // All orders count for trip counts
+        if (orderDate >= todayStart) {
+          todayCount++;
+        }
+        if (orderDate >= weekStart) {
+          weekCount++;
+        }
+        totalCount++;
+      });
+
+      setTodayEarnings(todayEarn);
+      setWeekEarnings(weekEarn);
+      setMonthEarnings(monthEarn);
+      setTodayTrips(todayCount);
+      setWeekTrips(weekCount);
+      setTotalTrips(totalCount);
+
+      // Get rating from user data
+      const userRating = parseFloat(user?.rating || 0);
+      setRating(userRating);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     getUnreadNotificationCount();
+    fetchDashboardData();
     const unsubscribe = navigation.addListener('focus', () => {
       getUnreadNotificationCount();
+      fetchDashboardData();
     });
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, user?.uid]);
 
   useEffect(() => {
     const getLoc = async () => {
@@ -140,7 +273,7 @@ const DashboardScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        <View style={styles.card}>
+        {/* <View style={styles.card}>
           <Text style={styles.cardTitle}>Your Location</Text>
           <View style={{ height: 220, borderRadius: 10, overflow: "hidden" }}>
             <MapView
@@ -163,20 +296,20 @@ const DashboardScreen = ({ navigation }) => {
               />
             </MapView>
           </View>
-        </View>
+        </View> */}
 
         {/* Earnings Summary */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Today's Earnings</Text>
-          <Text style={styles.earningsAmount}>Rs. 0</Text>
+          <Text style={styles.earningsAmount}>Rs. {todayEarnings.toFixed(2)}</Text>
           <View style={styles.earningsRow}>
             <View style={styles.earningItem}>
               <Text style={styles.earningLabel}>This Week</Text>
-              <Text style={styles.earningValue}>Rs. 0</Text>
+              <Text style={styles.earningValue}>Rs. {weekEarnings.toFixed(2)}</Text>
             </View>
             <View style={styles.earningItem}>
               <Text style={styles.earningLabel}>This Month</Text>
-              <Text style={styles.earningValue}>Rs. 0</Text>
+              <Text style={styles.earningValue}>Rs. {monthEarnings.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -185,15 +318,15 @@ const DashboardScreen = ({ navigation }) => {
           <Text style={styles.cardTitle}>Summary</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>0</Text>
+              <Text style={styles.summaryValue}>{totalTrips}</Text>
               <Text style={styles.summaryLabel}>Total Trips</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>Rs. 0</Text>
-              <Text style={styles.summaryLabel}>Todays Earnings</Text>
+              <Text style={styles.summaryValue}>Rs. {todayEarnings.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Today's Earnings</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>0.0</Text>
+              <Text style={styles.summaryValue}>{rating.toFixed(1)}</Text>
               <Text style={styles.summaryLabel}>Rating</Text>
             </View>
           </View>
@@ -202,10 +335,58 @@ const DashboardScreen = ({ navigation }) => {
         {/* Active Trips */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Active Trips</Text>
-          <View style={styles.emptyState}>
-            <Ionicons name="car-outline" size={40} color="#888" />
-            <Text style={styles.emptyText}>No active trips</Text>
-          </View>
+          {loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Loading...</Text>
+            </View>
+          ) : activeTrips.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="car-outline" size={40} color="#888" />
+              <Text style={styles.emptyText}>No active trips</Text>
+            </View>
+          ) : (
+            activeTrips.map((trip) => (
+              <TouchableOpacity
+                key={trip.id}
+                style={styles.activeTripCard}
+                onPress={() => navigation.navigate("TripDetails", { orderId: trip.id })}
+              >
+                <View style={styles.activeTripHeader}>
+                  <View style={styles.activeTripInfo}>
+                    <Ionicons name="cube-outline" size={20} color="#2c5aa0" />
+                    <Text style={styles.activeTripId}>
+                      Order #{trip.id?.slice(0, 8) || "N/A"}
+                    </Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: "#2196F3" }]}>
+                    <Text style={styles.statusBadgeText}>
+                      {trip.status || "Active"}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.activeTripLocation}>
+                  <View style={styles.activeTripLocationRow}>
+                    <Ionicons name="location" size={16} color="#4CAF50" />
+                    <Text style={styles.activeTripLocationText} numberOfLines={1}>
+                      {trip.senderAddress || trip.originCity || "Pickup location"}
+                    </Text>
+                  </View>
+                  <View style={styles.activeTripLocationRow}>
+                    <Ionicons name="flag" size={16} color="#FF3B30" />
+                    <Text style={styles.activeTripLocationText} numberOfLines={1}>
+                      {trip.receiverAddress || trip.destinationCity || "Drop location"}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.activeTripFooter}>
+                  <Text style={styles.activeTripPrice}>
+                    Rs. {parseFloat(trip.price || 0).toFixed(2)}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={20} color="#666" />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Completed Trips */}
@@ -218,15 +399,15 @@ const DashboardScreen = ({ navigation }) => {
           </View>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statValue}>{todayTrips}</Text>
               <Text style={styles.statLabel}>Today</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statValue}>{weekTrips}</Text>
               <Text style={styles.statLabel}>This Week</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statValue}>{totalTrips}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
           </View>
@@ -263,140 +444,170 @@ const DashboardScreen = ({ navigation }) => {
 // My Trips Screen
 const MyTripsScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  // Sample trips data - this would come from Firebase in real app
-  const trips = [
-    {
-      tripId: "TRP12345",
-      tripDate: "10/10/2024",
-      tripTime: "10:30 AM",
-      pickupLocation: "123 Main Street, Gulshan-e-Iqbal, Karachi",
-      dropLocation: "456 Park Avenue, Clifton, Karachi",
-      distance: "5.2 km",
-      estimatedTime: "15 mins",
-      vehicleType: "Bike",
-      packageDetails: {
-        type: "Documents",
-        weight: "Light (< 1kg)",
-        size: "Small (A4 envelope)",
-        quantity: "1 package",
-        description: "Important office documents - Legal papers",
-        specialInstructions: "Handle with care, keep dry, urgent delivery",
-        fragile: true,
-      },
-      customer: {
-        name: "Ahmed Khan",
-        phone: "+92 300 1234567",
-        email: "ahmed.khan@example.com",
-        rating: 4.5,
-        totalTrips: 45,
-        address: "House #123, Street 5, Gulshan-e-Iqbal",
-      },
-      receiver: {
-        name: "Sara Ahmed",
-        phone: "+92 321 9876543",
-        address: "Office #456, Park Avenue Plaza, Clifton",
-      },
-      fare: "Rs. 250",
-      baseFare: "Rs. 150",
-      distanceFare: "Rs. 80",
-      serviceFee: "Rs. 20",
-      paymentMethod: "Cash",
-      bookingTime: "10/10/2024, 10:15 AM",
-      priority: "Normal",
-      status: "Completed",
-    },
-    {
-      tripId: "TRP12346",
-      tripDate: "09/10/2024",
-      tripTime: "2:45 PM",
-      pickupLocation: "789 Garden Road, Saddar, Karachi",
-      dropLocation: "321 Beach View, DHA Phase 5, Karachi",
-      distance: "8.5 km",
-      estimatedTime: "25 mins",
-      vehicleType: "Car",
-      packageDetails: {
-        type: "Electronics",
-        weight: "Medium (2-5kg)",
-        size: "Medium (Box)",
-        quantity: "1 package",
-        description: "Laptop and accessories",
-        specialInstructions: "Fragile - Handle with extreme care",
-        fragile: true,
-      },
-      customer: {
-        name: "Fatima Ali",
-        phone: "+92 321 7654321",
-        email: "fatima.ali@example.com",
-        rating: 4.8,
-        totalTrips: 32,
-        address: "Apartment 5B, Garden Road, Saddar",
-      },
-      receiver: {
-        name: "Hassan Raza",
-        phone: "+92 300 9876543",
-        address: "Villa #321, Beach View, DHA Phase 5",
-      },
-      fare: "Rs. 450",
-      baseFare: "Rs. 200",
-      distanceFare: "Rs. 200",
-      serviceFee: "Rs. 50",
-      paymentMethod: "Card",
-      bookingTime: "09/10/2024, 2:30 PM",
-      priority: "Urgent",
-      status: "Completed",
-    },
-    {
-      tripId: "TRP12347",
-      tripDate: "08/10/2024",
-      tripTime: "11:00 AM",
-      pickupLocation: "555 University Road, Karachi",
-      dropLocation: "777 Mall Road, Gulshan, Karachi",
-      distance: "3.8 km",
-      estimatedTime: "12 mins",
-      vehicleType: "Bike",
-      packageDetails: {
-        type: "Food",
-        weight: "Light (< 1kg)",
-        size: "Small",
-        quantity: "2 packages",
-        description: "Restaurant food delivery",
-        specialInstructions: "Keep upright, deliver hot",
-        fragile: false,
-      },
-      customer: {
-        name: "Ali Hassan",
-        phone: "+92 333 1234567",
-        email: "ali.hassan@example.com",
-        rating: 4.2,
-        totalTrips: 18,
-        address: "Street 12, University Road",
-      },
-      receiver: {
-        name: "Zainab Khan",
-        phone: "+92 345 9876543",
-        address: "Office Tower, Mall Road, Gulshan",
-      },
-      fare: "Rs. 180",
-      baseFare: "Rs. 100",
-      distanceFare: "Rs. 60",
-      serviceFee: "Rs. 20",
-      paymentMethod: "Cash",
-      bookingTime: "08/10/2024, 10:45 AM",
-      priority: "Express",
-      status: "Completed",
-    },
-  ];
+  const user = useSelector((state) => state.home?.user);
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+
+  const fetchTrips = async () => {
+    try {
+      if (!user?.uid) return;
+      
+      setLoading(true);
+      const allOrders = await getAllData("orders");
+      
+      // Filter orders for this rider
+      const riderOrders = allOrders.filter(
+        (order) => order.riderId === user.uid
+      );
+
+      // Sort by most recent first
+      const sortedTrips = riderOrders.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+
+      setTrips(sortedTrips);
+    } catch (error) {
+      console.error("Error fetching trips:", error);
+      Alert.alert("Error", "Failed to load trips");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips();
+    
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchTrips();
+    });
+    
+    return unsubscribe;
+  }, [user?.uid, navigation]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTrips();
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", { 
+        month: "2-digit", 
+        day: "2-digit", 
+        year: "numeric" 
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString("en-US", { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      });
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "delivered":
+      case "completed":
+        return "#4CAF50";
+      case "pending":
+        return "#FF9800";
+      case "in transit":
+      case "in_progress":
+      case "assigned":
+      case "accepted":
+        return "#2196F3";
+      case "cancelled":
+        return "#FF3B30";
+      default:
+        return "#9E9E9E";
+    }
+  };
+
+  const getNextStatusOptions = (currentStatus) => {
+    const status = currentStatus?.toLowerCase() || "";
+    switch (status) {
+      case "pending":
+      case "assigned":
+        return [
+          { label: "Accept", value: "accepted" },
+          { label: "Start Trip", value: "in_progress" },
+          { label: "Cancel", value: "cancelled" },
+        ];
+      case "accepted":
+        return [
+          { label: "Start Trip", value: "in_progress" },
+          { label: "Cancel", value: "cancelled" },
+        ];
+      case "in_progress":
+      case "in transit":
+        return [
+          { label: "Mark as Delivered", value: "delivered" },
+          { label: "Mark as Completed", value: "completed" },
+          { label: "Cancel", value: "cancelled" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const handleStatusChange = async (tripId, newStatus) => {
+    try {
+      await updateData("orders", tripId, {
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      setStatusModalVisible(false);
+      setSelectedTrip(null);
+      Alert.alert("Success", "Status updated successfully");
+      fetchTrips();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      Alert.alert("Error", "Failed to update status");
+    }
+  };
 
   const handleTripPress = (trip) => {
-    navigation.navigate("TripDetails", { tripData: trip });
+    navigation.navigate("TripDetails", { orderId: trip.id });
+  };
+
+  const openStatusModal = (trip) => {
+    setSelectedTrip(trip);
+    setStatusModalVisible(true);
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) }]}>
         <Text style={styles.pageTitle}>My Trips</Text>
         
-        {trips.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Loading trips...</Text>
+          </View>
+        ) : trips.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="list-outline" size={50} color="#888" />
             <Text style={styles.emptyText}>No trips yet</Text>
@@ -405,71 +616,135 @@ const MyTripsScreen = ({ navigation }) => {
             </Text>
           </View>
         ) : (
-          trips.map((trip) => (
-            <TouchableOpacity
-              key={trip.tripId}
-              style={styles.tripCard}
-              onPress={() => handleTripPress(trip)}
-            >
-              {/* Trip Header */}
-              <View style={styles.tripHeader}>
-                <Text style={styles.tripIdText}>{trip.tripId}</Text>
-                <View
-                  style={[
-                    styles.tripStatusBadge,
-                    trip.status === "Completed" && styles.statusCompletedBadge,
-                  ]}
-                >
-                  <Text style={styles.tripStatusText}>{trip.status}</Text>
-                </View>
-              </View>
+          trips.map((trip) => {
+            const statusOptions = getNextStatusOptions(trip.status);
+            return (
+              <View key={trip.id} style={styles.tripCard}>
+                <TouchableOpacity onPress={() => handleTripPress(trip)}>
+                  {/* Trip Header */}
+                  <View style={styles.tripHeader}>
+                    <Text style={styles.tripIdText}>Order #{trip.id?.slice(0, 8) || "N/A"}</Text>
+                    <View
+                      style={[
+                        styles.tripStatusBadge,
+                        { backgroundColor: getStatusColor(trip.status) },
+                      ]}
+                    >
+                      <Text style={styles.tripStatusText}>
+                        {trip.status || "Pending"}
+                      </Text>
+                    </View>
+                  </View>
 
-              {/* Trip Info */}
-              <View style={styles.tripInfoSection}>
-                <View style={styles.tripDateRow}>
-                  <Ionicons name="calendar-outline" size={14} color="#666" />
-                  <Text style={styles.tripDateText}>
-                    {trip.tripDate} • {trip.tripTime}
-                  </Text>
-                </View>
-              </View>
+                  {/* Trip Info */}
+                  <View style={styles.tripInfoSection}>
+                    <View style={styles.tripDateRow}>
+                      <Ionicons name="calendar-outline" size={14} color="#666" />
+                      <Text style={styles.tripDateText}>
+                        {formatDate(trip.createdAt)} • {formatTime(trip.createdAt)}
+                      </Text>
+                    </View>
+                  </View>
 
-              {/* Locations */}
-              <View style={styles.tripLocationSection}>
-                <View style={styles.tripLocationRow}>
-                  <Ionicons name="location" size={16} color="#4CAF50" />
-                  <Text style={styles.tripLocationText} numberOfLines={1}>
-                    {trip.pickupLocation}
-                  </Text>
-                </View>
-                <View style={styles.tripLocationRow}>
-                  <Ionicons name="flag" size={16} color="#FF3B30" />
-                  <Text style={styles.tripLocationText} numberOfLines={1}>
-                    {trip.dropLocation}
-                  </Text>
-                </View>
-              </View>
+                  {/* Locations */}
+                  <View style={styles.tripLocationSection}>
+                    <View style={styles.tripLocationRow}>
+                      <Ionicons name="location" size={16} color="#4CAF50" />
+                      <Text style={styles.tripLocationText} numberOfLines={2}>
+                        {trip.senderAddress || trip.originCity || "Pickup location"}
+                      </Text>
+                    </View>
+                    <View style={styles.tripLocationRow}>
+                      <Ionicons name="flag" size={16} color="#FF3B30" />
+                      <Text style={styles.tripLocationText} numberOfLines={2}>
+                        {trip.receiverAddress || trip.destinationCity || "Drop location"}
+                      </Text>
+                    </View>
+                  </View>
 
-              {/* Package & Payment */}
-              <View style={styles.tripFooter}>
-                <View style={styles.tripPackageInfo}>
-                  <Ionicons name="cube-outline" size={14} color="#666" />
-                  <Text style={styles.tripPackageText}>
-                    {trip.packageDetails.type}
-                  </Text>
-                </View>
-                <Text style={styles.tripFareText}>{trip.fare}</Text>
-              </View>
+                  {/* Package & Payment */}
+                  <View style={styles.tripFooter}>
+                    <View style={styles.tripPackageInfo}>
+                      <Ionicons name="cube-outline" size={14} color="#666" />
+                      <Text style={styles.tripPackageText}>
+                        {trip.categoryName || trip.packageType || "Package"}
+                      </Text>
+                    </View>
+                    <Text style={styles.tripFareText}>
+                      {trip.price ? `Rs. ${parseFloat(trip.price).toFixed(2)}` : "N/A"}
+                    </Text>
+                  </View>
 
-              {/* View Details Arrow */}
-              <View style={styles.viewDetailsRow}>
-                <Text style={styles.viewDetailsText}>View Details</Text>
-                <Ionicons name="chevron-forward" size={18} color="#000" />
+                  {/* View Details Arrow */}
+                  <View style={styles.viewDetailsRow}>
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#000" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Status Change Button */}
+                {statusOptions.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.changeStatusButton}
+                    onPress={() => openStatusModal(trip)}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#2c5aa0" />
+                    <Text style={styles.changeStatusButtonText}>Change Status</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            </TouchableOpacity>
-          ))
+            );
+          })
         )}
       </View>
+
+      {/* Status Change Modal */}
+      <Modal
+        visible={statusModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setStatusModalVisible(false);
+          setSelectedTrip(null);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Status</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setStatusModalVisible(false);
+                  setSelectedTrip(null);
+                }}
+              >
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            {selectedTrip && (
+              <>
+                <Text style={styles.modalSubtitle}>
+                  Order #{selectedTrip.id?.slice(0, 8)}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  Current Status: {selectedTrip.status || "Pending"}
+                </Text>
+                <View style={styles.statusOptionsContainer}>
+                  {getNextStatusOptions(selectedTrip.status).map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={styles.statusOptionButton}
+                      onPress={() => handleStatusChange(selectedTrip.id, option.value)}
+                    >
+                      <Text style={styles.statusOptionText}>{option.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -478,134 +753,119 @@ const MyTripsScreen = ({ navigation }) => {
 const ChatScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const user = useSelector((state) => state.home?.user);
-  const [conversations, setConversations] = useState([]);
+  const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchConversations();
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchConversations();
-    });
-    return unsubscribe;
-  }, []);
-
-  const fetchConversations = async () => {
+  // Get last message from messages subcollection
+  const getLastMessage = async (chatId) => {
     try {
-      setLoading(true);
-      // Get all orders where this rider is assigned
-      const allOrders = await getAllData("orders");
-      const riderOrders = allOrders.filter(
-        (order) => order.riderId === user?.uid
-      );
+      const messagesRef = collection(db, "chats", chatId, "messages");
+      const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(1));
+      const snapshot = await getDocs(messagesQuery);
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return { id: doc.id, ...doc.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching last message:", error);
+      return null;
+    }
+  };
 
-      // Get unique customers from orders
-      const customerMap = new Map();
-      for (const order of riderOrders) {
-        const customerId = order.userId || order.customerEmail;
-        if (customerId && !customerMap.has(customerId)) {
-          // Get customer details
-          try {
-            const customerData = await getAllData("users");
-            const customer = customerData.find(
-              (c) => c.uid === order.userId || c.email === order.customerEmail
-            );
+  // Fetch chats
+  const fetchChats = async () => {
+    try {
+      if (!user?.uid) return;
+      
+      // Use getAllData helper to fetch all chats
+      const allChats = await getAllData("chats");
+      
+      const userChats = [];
+      
+      for (const chatDoc of allChats) {
+        const chatData = chatDoc;
+        const users = chatData.users || [];
+        
+        // Check if current user is in the users array
+        if (users.includes(user.uid)) {
+          // Get the other user's ID
+          const otherUserId = users.find(id => id !== user.uid);
+          
+          if (otherUserId) {
+            // Get last message
+            const chatId = chatData.chatId || chatDoc.id;
+            const lastMessage = await getLastMessage(chatId);
             
-            if (customer || order.customerEmail) {
-              // Get last message from chat
-              const conversationId = [user?.uid, order.userId || order.customerEmail].sort().join("_");
-              const lastMessage = await getLastMessage(conversationId);
-              
-              customerMap.set(customerId, {
-                customerId: order.userId || order.customerEmail,
-                customerName: customer
-                  ? (customer.firstName 
-                      ? `${customer.firstName} ${customer.lastName || ""}`.trim()
-                      : customer.displayName || customer.email || "Customer")
-                  : order.customerName || order.customerEmail || "Customer",
-                customerEmail: order.customerEmail || customer?.email,
-                orderId: order.id,
-                lastMessage: lastMessage?.text || "",
-                lastMessageTime: lastMessage?.createdAt || order.updatedAt || order.createdAt,
-              });
-            }
-          } catch (error) {
-            console.error("Error fetching customer data:", error);
+            // Get other user data using getDataById helper
+            const otherUserData = await getDataById("users", otherUserId);
+            const otherUserName = otherUserData
+              ? otherUserData.firstName && otherUserData.lastName
+                ? `${otherUserData.firstName} ${otherUserData.lastName}`.trim()
+                : otherUserData.displayName || otherUserData.email || `User ${otherUserId.substring(0, 8)}`
+              : `User ${otherUserId.substring(0, 8)}`;
+            
+            userChats.push({
+              chatId: chatId,
+              docId: chatDoc.id,
+              userId: user.uid,
+              otherUserId: otherUserId,
+              otherUserName: otherUserName,
+              lastMessage: lastMessage?.text || "",
+              lastMessageTime: lastMessage?.createdAt || chatData.createdAt || null,
+              senderId: lastMessage?.senderId || null,
+            });
           }
         }
       }
 
-      // Convert map to array and sort by last message time
-      const conversationsList = Array.from(customerMap.values()).sort((a, b) => {
-        const timeA = new Date(a.lastMessageTime || 0);
-        const timeB = new Date(b.lastMessageTime || 0);
+
+      console.log(userChats , "____");
+      
+      
+      // Sort by last message time (newest first)
+      userChats.sort((a, b) => {
+        const timeA = a.lastMessageTime
+          ? (a.lastMessageTime.toDate ? a.lastMessageTime.toDate().getTime() : new Date(a.lastMessageTime).getTime())
+          : 0;
+        const timeB = b.lastMessageTime
+          ? (b.lastMessageTime.toDate ? b.lastMessageTime.toDate().getTime() : new Date(b.lastMessageTime).getTime())
+          : 0;
         return timeB - timeA;
       });
-
-      setConversations(conversationsList);
+      
+      setChats(userChats);
     } catch (error) {
-      console.error("Error fetching conversations:", error);
-      setConversations([]);
+      console.error("Error fetching chats:", error);
+      Alert.alert("Error", "Failed to load chats");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getLastMessage = async (conversationId) => {
-    try {
-      const { collection, query, orderBy, limit, getDocs, where } = await import("firebase/firestore");
-      const { db } = await import("../../firebase");
-      const directRef = collection(db, "chats", conversationId, "messages");
-      const directQuery = query(directRef, orderBy("createdAt", "desc"), limit(1));
-      const directSnap = await getDocs(directQuery);
-      if (!directSnap.empty) {
-        const d = directSnap.docs[0];
-        return { id: d.id, ...d.data() };
-      }
+  useEffect(() => {
+    fetchChats();
+    
+    // Refresh when screen comes into focus
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      fetchChats();
+    });
+    
+    return unsubscribeFocus;
+  }, [user?.uid, navigation]);
 
-      const chatsRef = collection(db, "chats");
-      const q = query(chatsRef, where("chatId", "==", conversationId));
-      const chatSnap = await getDocs(q);
-      if (!chatSnap.empty) {
-        const chatDocId = chatSnap.docs[0].id;
-        const messagesRef = collection(db, "chats", chatDocId, "messages");
-        const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(1));
-        const snapshot = await getDocs(messagesQuery);
-        if (!snapshot.empty) {
-          const doc = snapshot.docs[0];
-          return { id: doc.id, ...doc.data() };
-        }
-      }
-      return null;
-    } catch (error) {
-      return null;
-    }
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchChats();
   };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      const now = new Date();
-      const diffMs = now - date;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
-
-      if (diffMins < 1) return "Just now";
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
-      return date.toLocaleDateString();
-    } catch (error) {
-      return "";
-    }
-  };
-
-  const handleChatPress = (customer) => {
+  const handleChatPress = (chat) => {
     navigation.navigate("DirectChat", {
       currentUserId: user?.uid,
-      otherUserId: customer.customerId,
-      otherUserName: customer.customerName,
+      otherUserId: chat.otherUserId,
+      otherUserName: chat.otherUserName || `User ${chat.otherUserId.substring(0, 8)}`,
     });
   };
 
@@ -616,39 +876,46 @@ const ChatScreen = ({ navigation }) => {
         
         {loading ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Loading conversations...</Text>
+            <Text style={styles.emptyText}>Loading chats...</Text>
           </View>
-        ) : conversations.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="chatbubbles-outline" size={50} color="#888" />
-            <Text style={styles.emptyText}>No conversations</Text>
-          <Text style={styles.emptySubtext}>
-              Start chatting with customers from your trips
-          </Text>
-        </View>
+        ) : chats.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubbles-outline" size={50} color="#888" />
+            <Text style={styles.emptyText}>No chats yet</Text>
+            <Text style={styles.emptySubtext}>
+              Your chats will appear here
+            </Text>
+          </View>
         ) : (
-          <ScrollView style={styles.conversationsList}>
-            {conversations.map((customer, index) => (
+          <ScrollView 
+            style={styles.conversationsList}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {chats.map((chat, index) => (
               <TouchableOpacity
-                key={customer.customerId || index}
+                key={chat.chatId || index}
                 style={styles.conversationItem}
-                onPress={() => handleChatPress(customer)}
+                onPress={() => handleChatPress(chat)}
               >
                 <View style={styles.conversationAvatar}>
                   <Ionicons name="person" size={24} color="#538cc6" />
                 </View>
                 <View style={styles.conversationContent}>
                   <View style={styles.conversationHeader}>
-                    <Text style={styles.conversationName}>{customer.customerName}</Text>
-                    {customer.lastMessageTime && (
+                    <Text style={styles.conversationName}>
+                      {chat.otherUserName || `User ${chat.otherUserId.substring(0, 8)}`}
+                    </Text>
+                    {chat.lastMessageTime && (
                       <Text style={styles.conversationTime}>
-                        {formatTime(customer.lastMessageTime)}
+                        {formatChatTime(chat.lastMessageTime)}
                       </Text>
                     )}
                   </View>
-                  {customer.lastMessage ? (
+                  {chat.lastMessage ? (
                     <Text style={styles.conversationLastMessage} numberOfLines={1}>
-                      {customer.lastMessage}
+                      {chat.senderId === user?.uid ? "You: " : ""}{chat.lastMessage}
                     </Text>
                   ) : (
                     <Text style={styles.conversationLastMessage} numberOfLines={1}>
@@ -1397,6 +1664,49 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000000",
   },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 8,
+  },
+  statusOptionsContainer: {
+    marginTop: 15,
+  },
+  statusOptionButton: {
+    backgroundColor: "#2c5aa0",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+  statusOptionText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  changeStatusButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E3F2FD",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#2c5aa0",
+  },
+  changeStatusButtonText: {
+    color: "#2c5aa0",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
   modalText: {
     fontSize: 14,
     color: "#333333",
@@ -1444,7 +1754,7 @@ const styles = StyleSheet.create({
   conversationItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "white",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -1559,6 +1869,67 @@ const styles = StyleSheet.create({
   statusCompletedBadge: {
     backgroundColor: "#4CAF50",
   },
+  activeTripCard: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  activeTripHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  activeTripInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  activeTripId: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000000",
+    marginLeft: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  activeTripLocation: {
+    marginBottom: 12,
+  },
+  activeTripLocationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  activeTripLocationText: {
+    fontSize: 13,
+    color: "#333333",
+    marginLeft: 8,
+    flex: 1,
+  },
+  activeTripFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  activeTripPrice: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2c5aa0",
+  },
   tripStatusText: {
     color: "#FFFFFF",
     fontSize: 11,
@@ -1643,7 +2014,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 10,
   },
-  statusBadgeText: {
+  statusBadgeTextProfile: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "600",

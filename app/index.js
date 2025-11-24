@@ -5,6 +5,7 @@ import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 // Rider
 import Mobile from "./pages/Mobile";
+import PickupNavigation from "./pages/PickupNavigation";
 import RiderChat from "./pages/RiderChat";
 import RiderHome from "./pages/RiderHome";
 import RiderLogin from "./pages/RiderLogin";
@@ -14,7 +15,6 @@ import SetMode from "./pages/SetMode";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
 import TripDetails from "./pages/TripDetails";
-import PickupNavigation from "./pages/PickupNavigation";
 import VehicelInformationr from "./pages/VehicelInformationr";
 
 // Customer
@@ -40,7 +40,7 @@ import { persistor, store } from "./redux/store";
 const Stack = createNativeStackNavigator();
 
 const RiderStack = () => (
-  <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
+  <Stack.Navigator initialRouteName="RiderHome" screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}>
     <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
     <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
     <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
@@ -86,6 +86,7 @@ const App = () => {
   const RenderStack = () => {
     const userRole = useSelector((state) => state.home.role);
     const user = useSelector((state) => state.home.user);
+  
     const isLoggedIn = user && Object.keys(user).length > 0;
 
     if (!isLoggedIn) {

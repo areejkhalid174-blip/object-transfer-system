@@ -1,15 +1,14 @@
-import { useState } from "react";
-import React from "react";
-import { Text, TouchableOpacity, View, TextInput } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import React, { useState } from "react";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useDispatch } from "react-redux";
+import Colors from "../constants/colors";
 import { loginWithFB } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
-import Colors from "../constants/colors";
 
 const RiderLogin = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("rider@gmail.com");
+  const [password, setPassword] = useState("Test@1122");
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
@@ -25,7 +24,7 @@ const RiderLogin = ({ navigation }) => {
         dispatch(setRole(user.role));
         
         // Navigate to splash screen with user role
-        navigation.navigate("SplashScreen", { userRole: user.role });
+        // navigation.navigate("SplashScreen", { userRole: user.role });
       }
     } catch (error) {
       console.error("Login error:", error);

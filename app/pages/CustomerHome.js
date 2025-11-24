@@ -4,11 +4,11 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/Ionicons";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllData } from "../Helper/firebaseHelper";
-import { fetchUserChats, subscribeToUserChats, formatChatTime } from "../Helper/chatHelper";
+import { fetchUserChats, formatChatTime, subscribeToUserChats } from "../Helper/chatHelper";
+import { getAllData, getDataById } from "../Helper/firebaseHelper";
 import Colors from "../constants/colors";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 
@@ -206,8 +206,33 @@ const MyOrdersScreen = ({ navigation, route }) => {
       // Filter orders for current user
       const userOrders = allOrders.filter(order => order.userId === user?.uid || order.customerEmail === user?.email);
       
+      // Fetch rider data for orders that have riderId
+      const ordersWithRiderData = await Promise.all(
+        userOrders.map(async (order) => {
+          if (order.riderId) {
+            try {
+              const riderData = await getDataById("users", order.riderId);
+              return {
+                ...order,
+                riderData: riderData || null,
+              };
+            } catch (error) {
+              console.error(`Error fetching rider data for order ${order.id}:`, error);
+              return {
+                ...order,
+                riderData: null,
+              };
+            }
+          }
+          return {
+            ...order,
+            riderData: null,
+          };
+        })
+      );
+      
       // Sort by most recent first
-      const sortedOrders = userOrders.sort((a, b) => {
+      const sortedOrders = ordersWithRiderData.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
         return dateB - dateA;
@@ -341,6 +366,64 @@ const MyOrdersScreen = ({ navigation, route }) => {
                         To: {order.receiverName} {order.receiverPhone ? `(${order.receiverPhone})` : ""}
                       </Text>
                     </View>
+                  )}
+                </View>
+              )}
+
+              {/* Rider Information */}
+              {(order.riderId || order.riderName) && (
+                <View style={styles.riderSection}>
+                  <View style={styles.riderHeader}>
+                    <Ionicons name="bicycle-outline" size={18} color="#2c5aa0" />
+                    <Text style={styles.riderSectionTitle}>Assigned Rider</Text>
+                  </View>
+                  <View style={styles.riderInfoContainer}>
+                    <View style={styles.riderInfoRow}>
+                      <Ionicons name="person-outline" size={16} color="#2c5aa0" />
+                      <Text style={styles.riderInfoLabel}>Name:</Text>
+                      <Text style={styles.riderInfoValue}>
+                        {order.riderData?.firstName && order.riderData?.lastName
+                          ? `${order.riderData.firstName} ${order.riderData.lastName}`
+                          : order.riderData?.displayName || order.riderName || "N/A"}
+                      </Text>
+                    </View>
+                    {(order.riderData?.phone || order.riderPhone) && (
+                      <View style={styles.riderInfoRow}>
+                        <Ionicons name="call-outline" size={16} color="#2c5aa0" />
+                        <Text style={styles.riderInfoLabel}>Phone:</Text>
+                        <Text style={styles.riderInfoValue}>
+                          {order.riderData?.phone || order.riderPhone}
+                        </Text>
+                      </View>
+                    )}
+                    {order.riderData?.email && (
+                      <View style={styles.riderInfoRow}>
+                        <Ionicons name="mail-outline" size={16} color="#2c5aa0" />
+                        <Text style={styles.riderInfoLabel}>Email:</Text>
+                        <Text style={styles.riderInfoValue}>{order.riderData.email}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Message Button */}
+                  {order.riderId && (
+                    <TouchableOpacity
+                      style={styles.messageRiderButton}
+                      onPress={() => {
+                        const riderName = order.riderData?.firstName && order.riderData?.lastName
+                          ? `${order.riderData.firstName} ${order.riderData.lastName}`
+                          : order.riderData?.displayName || order.riderName || "Rider";
+                        
+                        navigation.navigate("DirectChat", {
+                          currentUserId: user?.uid,
+                          otherUserId: order.riderId,
+                          otherUserName: riderName,
+                        });
+                      }}
+                    >
+                      <Ionicons name="chatbubble-outline" size={18} color="#FFFFFF" />
+                      <Text style={styles.messageRiderButtonText}>Message Rider</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               )}
@@ -1307,6 +1390,64 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888888",
     marginBottom: 30,
+  },
+  riderSection: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
+  },
+  riderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#BBDEFB",
+  },
+  riderSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2c5aa0",
+    marginLeft: 8,
+  },
+  riderInfoContainer: {
+    marginTop: 4,
+  },
+  riderInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  riderInfoLabel: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 8,
+    marginRight: 6,
+    fontWeight: "600",
+  },
+  riderInfoValue: {
+    fontSize: 13,
+    color: "#333",
+    fontWeight: "500",
+    flex: 1,
+  },
+  messageRiderButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2c5aa0",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  messageRiderButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
   },
   // Edit Profile Styles
   editRow: {

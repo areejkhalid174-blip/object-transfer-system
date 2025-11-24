@@ -50,6 +50,10 @@ const PackageDetail = ({ navigation, route }) => {
   const [totalKm, setTotalKm] = useState("");
   const [priceOf1Km, setPriceOf1Km] = useState(null);
   const [loadingCityPrice, setLoadingCityPrice] = useState(false);
+  
+  // Banks data
+  const [banks, setBanks] = useState([]);
+  const [loadingBanks, setLoadingBanks] = useState(false);
 
   // Get user from Redux
   const user = useSelector((state) => state.home?.user);
@@ -107,6 +111,28 @@ const PackageDetail = ({ navigation, route }) => {
       }
     }
   }, [totalKm, priceOf1Km, parcelType]);
+
+  // Fetch banks data
+  useEffect(() => {
+    const fetchBanks = async () => {
+      setLoadingBanks(true);
+      try {
+        const banksData = await getAllData("banks");
+        // Filter only active banks with type "bank"
+        const activeBanks = banksData.filter(
+          (bank) => bank.status === "active" && bank.type === "bank"
+        );
+        setBanks(activeBanks);
+      } catch (error) {
+        console.error("Error fetching banks:", error);
+        Alert.alert("Error", "Failed to load bank details. Please try again.");
+      } finally {
+        setLoadingBanks(false);
+      }
+    };
+
+    fetchBanks();
+  }, []);
 
   // Listen for city selection from CitySelector
   useEffect(() => {
@@ -735,6 +761,84 @@ const PackageDetail = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Bank Details */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Bank Details for Payment</Text>
+          {loadingBanks ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.loadingText}>Loading bank details...</Text>
+            </View>
+          ) : banks.length > 0 ? (
+            banks.map((bank, index) => (
+              <View key={bank.id || index} style={styles.bankCard}>
+                <View style={styles.bankHeader}>
+                  <View style={styles.bankIconContainer}>
+                    <Ionicons name="business-outline" size={24} color="#2c5aa0" />
+                  </View>
+                  <View style={styles.bankHeaderText}>
+                    <Text style={styles.bankName}>{bank.name || "Bank"}</Text>
+                    {bank.description && (
+                      <Text style={styles.bankDescription}>{bank.description}</Text>
+                    )}
+                  </View>
+                </View>
+                
+                <View style={styles.bankDetailsContainer}>
+                  <View style={styles.bankDetailRow}>
+                    <Ionicons name="person-outline" size={16} color="#666" />
+                    <Text style={styles.bankDetailLabel}>Account Holder:</Text>
+                    <Text style={styles.bankDetailValue}>{bank.accountHolderName || "N/A"}</Text>
+                  </View>
+                  
+                  <View style={styles.bankDetailRow}>
+                    <Ionicons name="card-outline" size={16} color="#666" />
+                    <Text style={styles.bankDetailLabel}>Account Number:</Text>
+                    <Text style={styles.bankDetailValue}>{bank.accountNumber || "N/A"}</Text>
+                  </View>
+                  
+                  {bank.branchCode && (
+                    <View style={styles.bankDetailRow}>
+                      <Ionicons name="location-outline" size={16} color="#666" />
+                      <Text style={styles.bankDetailLabel}>Branch Code:</Text>
+                      <Text style={styles.bankDetailValue}>{bank.branchCode}</Text>
+                    </View>
+                  )}
+                  
+                  {bank.branchAddress && (
+                    <View style={styles.bankDetailRow}>
+                      <Ionicons name="map-outline" size={16} color="#666" />
+                      <Text style={styles.bankDetailLabel}>Branch Address:</Text>
+                      <Text style={styles.bankDetailValue}>{bank.branchAddress}</Text>
+                    </View>
+                  )}
+                  
+                  {bank.phone && (
+                    <View style={styles.bankDetailRow}>
+                      <Ionicons name="call-outline" size={16} color="#666" />
+                      <Text style={styles.bankDetailLabel}>Phone:</Text>
+                      <Text style={styles.bankDetailValue}>{bank.phone}</Text>
+                    </View>
+                  )}
+                  
+                  {bank.email && (
+                    <View style={styles.bankDetailRow}>
+                      <Ionicons name="mail-outline" size={16} color="#666" />
+                      <Text style={styles.bankDetailLabel}>Email:</Text>
+                      <Text style={styles.bankDetailValue}>{bank.email}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.noBanksContainer}>
+              <Ionicons name="information-circle-outline" size={24} color="#999" />
+              <Text style={styles.noBanksText}>No bank details available</Text>
+            </View>
+          )}
+        </View>
+
         {/* Payment Proof Upload */}
         <View style={styles.section}>
           <Text style={styles.label}>Payment Proof (Required)</Text>
@@ -1130,6 +1234,78 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginTop: 10,
+  },
+  bankCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  bankHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  bankIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E3F2FD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  bankHeaderText: {
+    flex: 1,
+  },
+  bankName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2c5aa0",
+    marginBottom: 4,
+  },
+  bankDescription: {
+    fontSize: 12,
+    color: "#666",
+  },
+  bankDetailsContainer: {
+    marginTop: 8,
+  },
+  bankDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    flexWrap: "wrap",
+  },
+  bankDetailLabel: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 8,
+    marginRight: 6,
+    fontWeight: "600",
+  },
+  bankDetailValue: {
+    fontSize: 13,
+    color: "#333",
+    fontWeight: "500",
+    flex: 1,
+  },
+  noBanksContainer: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noBanksText: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 8,
   },
 });
 

@@ -1,18 +1,20 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Alert,
+  Linking,
   ScrollView,
   StyleSheet,
-  Linking,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { getDataById, getAllData, updateData } from "../Helper/firebaseHelper";
+import { getAllData, getDataById, updateData } from "../Helper/firebaseHelper";
 
 const TripDetails = ({ navigation, route }) => {
   const [tripStatus, setTripStatus] = useState("pending");
   const { orderId } = route?.params || {};
+  const [orderData, setOrderData] = useState(null);
   const [tripData, setTripData] = useState(route?.params?.tripData || {
     tripId: "TRP12345",
     tripDate: new Date().toLocaleDateString(),
@@ -62,6 +64,7 @@ const TripDetails = ({ navigation, route }) => {
       try {
         const order = await getDataById("orders", orderId);
         if (order) {
+          setOrderData(order);
           setTripData({
             tripId: orderId,
             tripDate: new Date(order.createdAt || new Date()).toLocaleDateString(),
@@ -135,33 +138,166 @@ const TripDetails = ({ navigation, route }) => {
     ? tripData.distance
     : `${Number(tripData.distance || 0).toFixed(2)} km`;
 
-  const displayedEarning = (() => {
-    const existing = tripData.fare;
-    if (existing) return existing;
-    const d = typeof tripData.distance === "string"
-      ? parseFloat(String(tripData.distance).replace("km", "").trim())
-      : Number(tripData.distance || 0);
-    if (d > 0 && pricePerKm && Number(pricePerKm) > 0) {
-      const val = d * Number(pricePerKm);
-      return `Rs. ${val.toFixed(2)}`;
-    }
-    return "Not calculated";
-  })();
+  // Calculate and display rider earning
+  const [riderEarning, setRiderEarning] = useState(null);
+  
+  useEffect(() => {
+    const calculateEarning = async () => {
+      if (!orderData) return;
+      
+      let earning = 0;
+      
+      // For within-city orders
+      if (orderData.parcelType === "withinCity") {
+        const totalKm = parseFloat(orderData.totalKm || 0);
+        const pricePerKm = parseFloat(orderData.priceOf1Km || 0);
+        if (totalKm > 0 && pricePerKm > 0) {
+          earning = totalKm * pricePerKm;
+        }
+      } 
+      // For out-of-city orders
+      else if (orderData.parcelType === "outOfCity") {
+        const distance = parseFloat(orderData.distance || 0);
+        if (distance > 0 && pricePerKm && Number(pricePerKm) > 0) {
+          earning = distance * Number(pricePerKm);
+        }
+      }
+      // Fallback
+      else {
+        const distance = parseFloat(orderData.distance || 0);
+        if (distance > 0 && pricePerKm && Number(pricePerKm) > 0) {
+          earning = distance * Number(pricePerKm);
+        }
+      }
+      
+      // Use stored riderEarning if available, otherwise calculate
+      if (orderData.riderEarning !== undefined && orderData.riderEarning !== null) {
+        setRiderEarning(parseFloat(orderData.riderEarning));
+      } else {
+        setRiderEarning(earning);
+      }
+    };
+    
+    calculateEarning();
+  }, [orderData, pricePerKm]);
 
-  const handleAccept = () => {
-    setTripStatus("accepted");
-    alert("Trip Accepted! Navigate to pickup location.");
+  const displayedEarning = riderEarning !== null && riderEarning > 0
+    ? `Rs. ${riderEarning.toFixed(2)}`
+    : orderData?.riderEarning !== undefined && orderData.riderEarning !== null
+    ? `Rs. ${parseFloat(orderData.riderEarning).toFixed(2)}`
+    : "Calculating...";
+
+  const handleAccept = async () => {
+    if (!orderId) return;
+    try {
+      await updateData("orders", orderId, {
+        status: "accepted",
+        updatedAt: new Date().toISOString(),
+      });
+      setTripStatus("accepted");
+      Alert.alert("Success", "Trip Accepted! Navigate to pickup location.");
+    } catch (error) {
+      console.error("Error accepting trip:", error);
+      Alert.alert("Error", "Failed to accept trip");
+    }
   };
 
   const handleReject = () => {
-    alert("Trip Rejected");
+    Alert.alert("Trip Rejected");
     navigation.goBack();
   };
 
-  const handleCompleteTrip = () => {
-    setTripStatus("completed");
-    alert("Trip Completed! Payment received.");
-    navigation.navigate("RiderHome");
+  // Calculate rider earnings based on distance
+  const calculateRiderEarning = async () => {
+    if (!orderData) return 0;
+    
+    try {
+      let earning = 0;
+      
+      // For within-city orders
+      if (orderData.parcelType === "withinCity") {
+        const totalKm = parseFloat(orderData.totalKm || 0);
+        const pricePerKm = parseFloat(orderData.priceOf1Km || 0);
+        if (totalKm > 0 && pricePerKm > 0) {
+          earning = totalKm * pricePerKm;
+        }
+      } 
+      // For out-of-city orders
+      else if (orderData.parcelType === "outOfCity") {
+        const distance = parseFloat(orderData.distance || 0);
+        // Use pricePerKm from state (already fetched)
+        if (distance > 0 && pricePerKm && Number(pricePerKm) > 0) {
+          earning = distance * Number(pricePerKm);
+        } else {
+          // Fallback: try to get price per km from price collection
+          try {
+            const priceDataResult = await getAllData("price");
+            if (priceDataResult && priceDataResult.length > 0) {
+              const fetchedPricePerKm = parseFloat(priceDataResult[0].price || 0);
+              if (distance > 0 && fetchedPricePerKm > 0) {
+                earning = distance * fetchedPricePerKm;
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching price data:", error);
+          }
+        }
+      }
+      // Fallback: use distance if available
+      else {
+        const distance = parseFloat(orderData.distance || 0);
+        if (distance > 0 && pricePerKm && Number(pricePerKm) > 0) {
+          earning = distance * Number(pricePerKm);
+        }
+      }
+      
+      return earning;
+    } catch (error) {
+      console.error("Error calculating rider earning:", error);
+      return 0;
+    }
+  };
+
+  const handleMarkAsDelivered = async () => {
+    if (!orderId) return;
+    try {
+      // Calculate rider earning
+      const riderEarning = await calculateRiderEarning();
+      
+      await updateData("orders", orderId, {
+        status: "delivered",
+        riderEarning: riderEarning,
+        riderEarningCalculatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setTripStatus("delivered");
+      Alert.alert("Success", `Trip marked as delivered! Your earning: Rs. ${riderEarning.toFixed(2)}`);
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error marking as delivered:", error);
+      Alert.alert("Error", "Failed to update status");
+    }
+  };
+
+  const handleCompleteTrip = async () => {
+    if (!orderId) return;
+    try {
+      // Calculate rider earning
+      const riderEarning = await calculateRiderEarning();
+      
+      await updateData("orders", orderId, {
+        status: "completed",
+        riderEarning: riderEarning,
+        riderEarningCalculatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setTripStatus("completed");
+      Alert.alert("Success", `Trip Completed! Your earning: Rs. ${riderEarning.toFixed(2)}`);
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error completing trip:", error);
+      Alert.alert("Error", "Failed to complete trip");
+    }
   };
 
   const handleCall = () => {
@@ -201,24 +337,20 @@ const TripDetails = ({ navigation, route }) => {
           </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[styles.button, styles.acceptButton]}
-              onPress={async () => {
-                if (!orderId) return;
-                await updateData("orders", orderId, { status: "in_transit", updatedAt: new Date().toISOString() });
-                setTripStatus("accepted");
-                navigation.navigate("PickupNavigation", { orderId });
-              }}
-            >
-              <Text style={styles.acceptButtonText}>Start Moving to Pickup</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[styles.button, styles.rejectButton]}
               onPress={async () => {
                 if (!orderId) return;
-                await updateData("orders", orderId, { status: "cancelled", updatedAt: new Date().toISOString() });
-                setTripStatus("completed");
-                alert("Trip cancelled");
-                navigation.goBack();
+                try {
+                  await updateData("orders", orderId, { 
+                    status: "cancelled", 
+                    updatedAt: new Date().toISOString() 
+                  });
+                  Alert.alert("Success", "Trip cancelled");
+                  navigation.goBack();
+                } catch (error) {
+                  console.error("Error cancelling trip:", error);
+                  Alert.alert("Error", "Failed to cancel trip");
+                }
               }}
             >
               <Text style={styles.rejectButtonText}>Cancel Trip</Text>
@@ -242,16 +374,26 @@ const TripDetails = ({ navigation, route }) => {
             <View
               style={[
                 styles.statusBadge,
-                tripStatus === "accepted" && styles.statusAccepted,
-                tripStatus === "completed" && styles.statusCompleted,
+                (tripStatus === "accepted" || tripStatus === "assigned") && styles.statusAccepted,
+                (tripStatus === "in_progress" || tripStatus === "in_transit") && styles.statusInProgress,
+                (tripStatus === "completed" || tripStatus === "delivered") && styles.statusCompleted,
+                tripStatus === "cancelled" && styles.statusCancelled,
               ]}
             >
               <Text style={styles.statusText}>
                 {tripStatus === "pending"
                   ? "New Request"
-                  : tripStatus === "accepted"
-                  ? "In Progress"
-                  : "Completed"}
+                  : tripStatus === "accepted" || tripStatus === "assigned"
+                  ? "Accepted"
+                  : tripStatus === "in_progress" || tripStatus === "in_transit"
+                  ? "In Transit"
+                  : tripStatus === "completed"
+                  ? "Completed"
+                  : tripStatus === "delivered"
+                  ? "Delivered"
+                  : tripStatus === "cancelled"
+                  ? "Cancelled"
+                  : tripStatus}
               </Text>
             </View>
           </View>
@@ -441,24 +583,30 @@ const TripDetails = ({ navigation, route }) => {
           <Text style={styles.sectionTitle}>Payment Information</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Base Fare:</Text>
-            <Text style={styles.detailValue}>{tripData.baseFare}</Text>
+            <Text style={styles.detailLabel}>Customer Fare:</Text>
+            <Text style={styles.detailValue}>{tripData.fare}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Distance Fare:</Text>
-            <Text style={styles.detailValue}>{tripData.distanceFare}</Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Service Fee:</Text>
-            <Text style={styles.detailValue}>{tripData.serviceFee}</Text>
+            <Text style={styles.detailLabel}>Distance:</Text>
+            <Text style={styles.detailValue}>
+              {orderData?.parcelType === "withinCity" 
+                ? `${orderData.totalKm || 0} km`
+                : displayedDistance}
+            </Text>
           </View>
 
           <View style={[styles.fareRow, { borderTopWidth: 1, borderTopColor: "#E0E0E0", paddingTop: 15, marginTop: 10 }]}>
-            <Text style={styles.fareLabel}>Total Fare:</Text>
-            <Text style={styles.fareAmount}>{tripData.fare}</Text>
+            <Text style={styles.fareLabel}>Your Earning:</Text>
+            <Text style={[styles.fareAmount, { color: "#4CAF50" }]}>{displayedEarning}</Text>
           </View>
+          
+          {orderData?.parcelType === "withinCity" && orderData.priceOf1Km && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Rate per km:</Text>
+              <Text style={styles.detailValue}>Rs. {parseFloat(orderData.priceOf1Km).toFixed(2)}</Text>
+            </View>
+          )}
 
           <View style={styles.paymentMethodRow}>
             <Ionicons name="wallet-outline" size={18} color="#666" />
@@ -474,7 +622,7 @@ const TripDetails = ({ navigation, route }) => {
         </View>
 
         {/* Action Buttons */}
-        {!orderId && tripStatus === "pending" && (
+        {orderId && tripStatus === "pending" && (
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.button, styles.rejectButton]}
@@ -492,19 +640,52 @@ const TripDetails = ({ navigation, route }) => {
           </View>
         )}
 
-        {!orderId && tripStatus === "accepted" && (
+        {orderId && (tripStatus === "accepted" || tripStatus === "assigned") && (
           <TouchableOpacity
-            style={[styles.button, styles.completeButton]}
-            onPress={handleCompleteTrip}
+            style={[styles.button, styles.startTripButton]}
+            onPress={async () => {
+              if (!orderId) return;
+              try {
+                await updateData("orders", orderId, {
+                  status: "in_progress",
+                  updatedAt: new Date().toISOString(),
+                });
+                setTripStatus("in_progress");
+                Alert.alert("Success", "Trip started!");
+              } catch (error) {
+                console.error("Error starting trip:", error);
+                Alert.alert("Error", "Failed to start trip");
+              }
+            }}
           >
-            <Text style={styles.completeButtonText}>Complete Trip</Text>
+            <Text style={styles.startTripButtonText}>Start Trip</Text>
           </TouchableOpacity>
         )}
 
-        {tripStatus === "completed" && (
+        {orderId && (tripStatus === "in_progress" || tripStatus === "in_transit") && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.button, styles.deliveredButton]}
+              onPress={handleMarkAsDelivered}
+            >
+              <Text style={styles.deliveredButtonText}>Mark as Delivered</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.completeButton]}
+              onPress={handleCompleteTrip}
+            >
+              <Text style={styles.completeButtonText}>Mark as Completed</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {(tripStatus === "completed" || tripStatus === "delivered") && (
           <View style={styles.completedMessage}>
             <Ionicons name="checkmark-circle" size={50} color="#4CAF50" />
-            <Text style={styles.completedText}>Trip Completed!</Text>
+            <Text style={styles.completedText}>
+              Trip {tripStatus === "completed" ? "Completed" : "Delivered"}!
+            </Text>
           </View>
         )}
       </View>
@@ -556,8 +737,14 @@ const styles = StyleSheet.create({
   statusAccepted: {
     backgroundColor: "#2196F3",
   },
+  statusInProgress: {
+    backgroundColor: "#FF9800",
+  },
   statusCompleted: {
     backgroundColor: "#4CAF50",
+  },
+  statusCancelled: {
+    backgroundColor: "#FF3B30",
   },
   statusText: {
     color: "#FFFFFF",
@@ -779,8 +966,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
   },
-  completeButton: {
-    backgroundColor: "#4CAF50",
+  startTripButton: {
+    backgroundColor: "#2196F3",
     width: "100%",
     height: 50,
     borderRadius: 10,
@@ -789,9 +976,27 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
   },
-  completeButtonText: {
+  startTripButtonText: {
     fontSize: 18,
     fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  deliveredButton: {
+    backgroundColor: "#FF9800",
+    marginRight: 10,
+  },
+  deliveredButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  completeButton: {
+    backgroundColor: "#4CAF50",
+    marginLeft: 10,
+  },
+  completeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
     color: "#FFFFFF",
   },
   completedMessage: {
