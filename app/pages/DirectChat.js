@@ -20,6 +20,9 @@ import {
   serverTimestamp,
   where,
   getDocs,
+  doc,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase";
 
@@ -39,23 +42,24 @@ const DirectChat = ({ route }) => {
     const chatIdField = sortedIds.join("_");
 
     const chatsRef = collection(db, "chats");
-
-    // Check if chat already exists
     const q = query(chatsRef, where("chatId", "==", chatIdField));
     const existing = await getDocs(q);
-
     if (!existing.empty) {
-      return existing.docs[0].id; // existing chat doc ID
+      return existing.docs[0].id;
     }
 
-    // Create a new chat doc with auto ID
-    const newChat = await addDoc(chatsRef, {
+    const chatDocRef = doc(db, "chats", chatIdField);
+    const chatDocSnap = await getDoc(chatDocRef);
+    if (chatDocSnap.exists()) {
+      return chatIdField;
+    }
+
+    await setDoc(chatDocRef, {
       chatId: chatIdField,
       users: sortedIds,
       createdAt: serverTimestamp(),
     });
-
-    return newChat.id;
+    return chatIdField;
   };
 
   // Load or create chat

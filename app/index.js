@@ -14,6 +14,7 @@ import SetMode from "./pages/SetMode";
 import Setting from "./pages/Setting";
 import SupportingDocuments from "./pages/SupportingDocuments";
 import TripDetails from "./pages/TripDetails";
+import PickupNavigation from "./pages/PickupNavigation";
 import VehicelInformationr from "./pages/VehicelInformationr";
 
 // Customer
@@ -50,6 +51,7 @@ const RiderStack = () => (
     <Stack.Screen name="SupportingDocuments" component={SupportingDocuments} />
     <Stack.Screen name="Setting" component={Setting} />
     <Stack.Screen name="TripDetails" component={TripDetails} />
+    <Stack.Screen name="PickupNavigation" component={PickupNavigation} options={{ headerShown: false }} />
     <Stack.Screen name="RiderChat" component={RiderChat} />
     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
     <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />

@@ -7,13 +7,17 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { logout, getAllData } from "../Helper/firebaseHelper";
+import { logout, getAllData, updateData, forgotPassword } from "../Helper/firebaseHelper";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
+import * as Location from "expo-location";
+import { MapView, Marker, PROVIDER_GOOGLE } from "../../components/MapViewWrapper";
 
 const Tab = createBottomTabNavigator();
 
@@ -23,6 +27,9 @@ const DashboardScreen = ({ navigation }) => {
   const [isOnline, setIsOnline] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const user = useSelector((state) => state.home?.user);
+  const [location, setLocation] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [incomingRequest, setIncomingRequest] = useState(null);
 
   const getUnreadNotificationCount = async () => {
     try {
@@ -46,6 +53,51 @@ const DashboardScreen = ({ navigation }) => {
     });
     return unsubscribe;
   }, [navigation]);
+
+  useEffect(() => {
+    const getLoc = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setLocation({ latitude: 24.8607, longitude: 67.0011 });
+          return;
+        }
+        const pos = await Location.getCurrentPositionAsync({});
+        setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      } catch (_e) {
+        setLocation({ latitude: 24.8607, longitude: 67.0011 });
+      }
+    };
+    getLoc();
+  }, []);
+
+  useEffect(() => {
+    let timer;
+    if (isOnline) {
+      timer = setTimeout(async () => {
+        try {
+          const orders = await getAllData("orders");
+          const pending = orders?.find((o) => (o.status || "").toLowerCase() === "pending");
+          if (pending) {
+            setIncomingRequest({
+              id: pending.id,
+              pickup: pending.senderAddress || pending.originCity || "",
+              drop: pending.receiverAddress || pending.destinationCity || "",
+              fare: `Rs. ${Number(pending.price || 0).toFixed(2)}`,
+              distance: `${Number(pending.distance || 0).toFixed(2)} km`,
+              time: "",
+            });
+            setShowRequestModal(true);
+          }
+        } catch (_e) {
+          // ignore
+        }
+      }, 2000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isOnline]);
 
   return (
     <ScrollView style={styles.container}>
@@ -88,6 +140,31 @@ const DashboardScreen = ({ navigation }) => {
           </Text>
         </View>
 
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your Location</Text>
+          <View style={{ height: 220, borderRadius: 10, overflow: "hidden" }}>
+            <MapView
+              provider={PROVIDER_GOOGLE}
+              style={{ flex: 1 }}
+              initialRegion={{
+                latitude: location?.latitude || 24.8607,
+                longitude: location?.longitude || 67.0011,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+            >
+              <Marker
+                coordinate={{
+                  latitude: location?.latitude || 24.8607,
+                  longitude: location?.longitude || 67.0011,
+                }}
+                title="Rider"
+                pinColor="green"
+              />
+            </MapView>
+          </View>
+        </View>
+
         {/* Earnings Summary */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Today's Earnings</Text>
@@ -100,6 +177,24 @@ const DashboardScreen = ({ navigation }) => {
             <View style={styles.earningItem}>
               <Text style={styles.earningLabel}>This Month</Text>
               <Text style={styles.earningValue}>Rs. 0</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Summary</Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>0</Text>
+              <Text style={styles.summaryLabel}>Total Trips</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>Rs. 0</Text>
+              <Text style={styles.summaryLabel}>Todays Earnings</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>0.0</Text>
+              <Text style={styles.summaryLabel}>Rating</Text>
             </View>
           </View>
         </View>
@@ -137,6 +232,30 @@ const DashboardScreen = ({ navigation }) => {
           </View>
         </View>
       </View>
+      <Modal transparent visible={showRequestModal} animationType="slide" onRequestClose={() => setShowRequestModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>New Trip Request</Text>
+            {incomingRequest && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={styles.modalText}>Pickup: {incomingRequest.pickup}</Text>
+                <Text style={styles.modalText}>Drop: {incomingRequest.drop}</Text>
+                <Text style={styles.modalText}>Fare: {incomingRequest.fare}</Text>
+                <Text style={styles.modalText}>Distance: {incomingRequest.distance}</Text>
+                <Text style={styles.modalText}>ETA: {incomingRequest.time}</Text>
+              </View>
+            )}
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.acceptBtn} onPress={() => { setShowRequestModal(false); navigation.navigate("TripDetails", { orderId: incomingRequest?.id }); }}>
+                <Text style={styles.actionText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.rejectBtn} onPress={() => { setShowRequestModal(false); }}>
+                <Text style={styles.actionText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -433,15 +552,28 @@ const ChatScreen = ({ navigation }) => {
 
   const getLastMessage = async (conversationId) => {
     try {
-      const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
+      const { collection, query, orderBy, limit, getDocs, where } = await import("firebase/firestore");
       const { db } = await import("../../firebase");
-      const messagesRef = collection(db, "chats", conversationId, "messages");
-      const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(1));
-      const snapshot = await getDocs(messagesQuery);
-      
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        return { id: doc.id, ...doc.data() };
+      const directRef = collection(db, "chats", conversationId, "messages");
+      const directQuery = query(directRef, orderBy("createdAt", "desc"), limit(1));
+      const directSnap = await getDocs(directQuery);
+      if (!directSnap.empty) {
+        const d = directSnap.docs[0];
+        return { id: d.id, ...d.data() };
+      }
+
+      const chatsRef = collection(db, "chats");
+      const q = query(chatsRef, where("chatId", "==", conversationId));
+      const chatSnap = await getDocs(q);
+      if (!chatSnap.empty) {
+        const chatDocId = chatSnap.docs[0].id;
+        const messagesRef = collection(db, "chats", chatDocId, "messages");
+        const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(1));
+        const snapshot = await getDocs(messagesQuery);
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          return { id: doc.id, ...doc.data() };
+        }
       }
       return null;
     } catch (error) {
@@ -537,24 +669,31 @@ const ChatScreen = ({ navigation }) => {
 // Profile Screen
 const ProfileScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  // Sample rider data - this would come from Firebase/Redux in real app
-  const riderData = {
-    name: "Muhammad Ahmed",
-    email: "ahmed.rider@example.com",
-    phone: "+92 300 1234567",
-    cnic: "42101-1234567-8",
-    rating: 4.7,
-    totalTrips: 156,
-    totalEarnings: "Rs. 45,000",
-    vehicleInfo: {
-      type: "Bike",
-      model: "Honda CD 70",
-      registrationNumber: "KHI-1234",
-      color: "Black",
-    },
-    status: "Active",
-    joinDate: "January 2024",
+  const user = useSelector((state) => state.home?.user);
+
+  const fullName = (
+    user?.displayName ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    user?.name ||
+    (user?.email ? String(user.email).split("@")[0] : "Rider")
+  );
+  const email = user?.email || "";
+  const phone = user?.phone || "";
+  const cnic = user?.cnic || user?.nid || "";
+  const joinDate = (() => {
+    const d = user?.createdAt ? new Date(user.createdAt) : null;
+    return d ? d.toLocaleDateString() : "";
+  })();
+  const vehicleInfo = {
+    type: user?.vehicleType || "",
+    model: user?.vehicleModel || "",
+    registrationNumber: user?.vehicleRegistrationNumber || user?.vehicleNumber || "",
+    color: user?.vehicleColor || "",
   };
+  const status = user?.status || "Active";
+  const rating = Number(user?.rating || 0);
+  const totalTrips = Number(user?.totalTrips || 0);
+  const totalEarnings = user?.totalEarnings ? String(user.totalEarnings) : "Rs. 0";
 
   return (
     <ScrollView style={styles.container}>
@@ -566,20 +705,20 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.profileAvatar}>
             <Ionicons name="person" size={40} color="#000" />
           </View>
-          <Text style={styles.profileName}>{riderData.name}</Text>
-          <Text style={styles.profileEmail}>{riderData.email}</Text>
+          <Text style={styles.profileName}>{fullName}</Text>
+          <Text style={styles.profileEmail}>{email}</Text>
           
           {/* Rating */}
           <View style={styles.profileRatingRow}>
             <Ionicons name="star" size={18} color="#FFD700" />
             <Text style={styles.profileRatingText}>
-              {riderData.rating} ({riderData.totalTrips} trips)
+              {rating} ({totalTrips} trips)
             </Text>
           </View>
 
           {/* Status Badge */}
           <View style={styles.statusBadgeProfile}>
-            <Text style={styles.statusBadgeText}>{riderData.status}</Text>
+            <Text style={styles.statusBadgeText}>{status}</Text>
           </View>
         </View>
 
@@ -591,7 +730,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="person-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Full Name</Text>
-              <Text style={styles.infoValue}>{riderData.name}</Text>
+              <Text style={styles.infoValue}>{fullName}</Text>
             </View>
           </View>
 
@@ -599,7 +738,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="mail-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{riderData.email}</Text>
+              <Text style={styles.infoValue}>{email}</Text>
             </View>
           </View>
 
@@ -607,7 +746,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="call-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Phone Number</Text>
-              <Text style={styles.infoValue}>{riderData.phone}</Text>
+              <Text style={styles.infoValue}>{phone}</Text>
             </View>
           </View>
 
@@ -615,7 +754,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="card-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>CNIC</Text>
-              <Text style={styles.infoValue}>{riderData.cnic}</Text>
+              <Text style={styles.infoValue}>{cnic}</Text>
             </View>
           </View>
 
@@ -623,7 +762,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="calendar-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Member Since</Text>
-              <Text style={styles.infoValue}>{riderData.joinDate}</Text>
+              <Text style={styles.infoValue}>{joinDate}</Text>
             </View>
           </View>
         </View>
@@ -636,7 +775,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="bicycle-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Vehicle Type</Text>
-              <Text style={styles.infoValue}>{riderData.vehicleInfo.type}</Text>
+              <Text style={styles.infoValue}>{vehicleInfo.type}</Text>
             </View>
           </View>
 
@@ -644,7 +783,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="car-sport-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Model</Text>
-              <Text style={styles.infoValue}>{riderData.vehicleInfo.model}</Text>
+              <Text style={styles.infoValue}>{vehicleInfo.model}</Text>
             </View>
           </View>
 
@@ -652,7 +791,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="document-text-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Registration Number</Text>
-              <Text style={styles.infoValue}>{riderData.vehicleInfo.registrationNumber}</Text>
+              <Text style={styles.infoValue}>{vehicleInfo.registrationNumber}</Text>
             </View>
           </View>
 
@@ -660,7 +799,7 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="color-palette-outline" size={20} color="#666" />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Color</Text>
-              <Text style={styles.infoValue}>{riderData.vehicleInfo.color}</Text>
+              <Text style={styles.infoValue}>{vehicleInfo.color}</Text>
             </View>
           </View>
         </View>
@@ -672,20 +811,20 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statBox}>
               <Ionicons name="star" size={24} color="#FFD700" />
-              <Text style={styles.statValue}>{riderData.rating}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.profileStatValue}>{rating}</Text>
+              <Text style={styles.profileStatLabel}>Rating</Text>
             </View>
 
             <View style={styles.statBox}>
               <Ionicons name="car-outline" size={24} color="#4CAF50" />
-              <Text style={styles.statValue}>{riderData.totalTrips}</Text>
-              <Text style={styles.statLabel}>Total Trips</Text>
+              <Text style={styles.profileStatValue}>{totalTrips}</Text>
+              <Text style={styles.profileStatLabel}>Total Trips</Text>
             </View>
 
             <View style={styles.statBox}>
               <Ionicons name="wallet-outline" size={24} color="#2196F3" />
-              <Text style={styles.statValue}>{riderData.totalEarnings}</Text>
-              <Text style={styles.statLabel}>Earnings</Text>
+              <Text style={styles.profileStatValue}>{totalEarnings}</Text>
+              <Text style={styles.profileStatLabel}>Earnings</Text>
             </View>
           </View>
         </View>
@@ -693,7 +832,7 @@ const ProfileScreen = ({ navigation }) => {
         {/* Edit Profile Button */}
         <TouchableOpacity 
           style={styles.editProfileButton}
-          onPress={() => alert("Edit Profile functionality coming soon!")}
+          onPress={() => navigation.navigate("Settings")}
         >
           <Ionicons name="create-outline" size={20} color="#FFFFFF" />
           <Text style={styles.editProfileButtonText}>Edit Profile</Text>
@@ -730,13 +869,74 @@ const ProfileScreen = ({ navigation }) => {
 const SettingsScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.home?.user);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [tripAlerts, setTripAlerts] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [passwordModal, setPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [profileModal, setProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState(user?.displayName || user?.firstName || "");
+  const [profilePhone, setProfilePhone] = useState(user?.phone || "");
+  const [aboutModal, setAboutModal] = useState(false);
 
   const handleChangePassword = () => {
-    alert("Change Password functionality coming soon!");
+    setPasswordModal(true);
+  };
+
+  const handleUpdatePassword = async () => {
+    try {
+      const trimmed = String(newPassword || "").trim();
+      if (!trimmed || trimmed.length < 6) {
+        Alert.alert("Error", "Password must be at least 6 characters");
+        return;
+      }
+      const { updatePassword } = await import("firebase/auth");
+      const { auth } = await import("../../firebase");
+      if (!auth.currentUser) {
+        Alert.alert("Error", "User not logged in");
+        return;
+      }
+      await updatePassword(auth.currentUser, trimmed);
+      setPasswordModal(false);
+      setNewPassword("");
+      Alert.alert("Success", "Password updated successfully");
+    } catch (error) {
+      try {
+        if (user?.email) {
+          await forgotPassword(user.email);
+          Alert.alert("Action Required", "We sent a reset link to your email");
+        } else {
+          Alert.alert("Error", "Unable to update password");
+        }
+      } catch (_) {
+        Alert.alert("Error", "Unable to update password");
+      }
+    }
+  };
+
+  const handleOpenProfile = () => {
+    setProfileModal(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const updated = {
+        displayName: profileName || "",
+        phone: profilePhone || "",
+        updatedAt: new Date().toISOString(),
+      };
+      if (user?.uid) {
+        await updateData("users", user.uid, updated);
+        dispatch(setUser({ ...user, ...updated }));
+      }
+      setProfileModal(false);
+      Alert.alert("Success", "Profile updated");
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile");
+    }
   };
 
   const handleLogout = async () => {
@@ -785,6 +985,15 @@ const SettingsScreen = ({ navigation }) => {
           >
             <Ionicons name="key-outline" size={22} color="#000" />
             <Text style={styles.optionText}>Change Password</Text>
+            <Ionicons name="chevron-forward" size={20} color="#888" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.optionItem}
+            onPress={handleOpenProfile}
+          >
+            <Ionicons name="person-circle-outline" size={22} color="#000" />
+            <Text style={styles.optionText}>Update Profile</Text>
             <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
 
@@ -883,14 +1092,21 @@ const SettingsScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionItem}>
-            <Ionicons name="moon-outline" size={22} color="#000" />
-            <Text style={styles.optionText}>Dark Mode</Text>
-            <View style={styles.optionRight}>
-              <Text style={styles.optionRightText}>Off</Text>
-              <Ionicons name="chevron-forward" size={20} color="#888" />
+          <View style={styles.toggleItem}>
+            <View style={styles.toggleLeft}>
+              <Ionicons name="moon-outline" size={22} color="#000" />
+              <View style={styles.toggleTextContainer}>
+                <Text style={styles.toggleTitle}>Dark Mode</Text>
+                <Text style={styles.toggleSubtitle}>{isDarkMode ? "On" : "Off"}</Text>
+              </View>
             </View>
-          </TouchableOpacity>
+            <Switch
+              value={isDarkMode}
+              onValueChange={setIsDarkMode}
+              trackColor={{ false: "#767577", true: "#4CAF50" }}
+              thumbColor={isDarkMode ? "#fff" : "#f4f3f4"}
+            />
+          </View>
         </View>
 
         {/* Support */}
@@ -915,7 +1131,7 @@ const SettingsScreen = ({ navigation }) => {
             <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionItem}>
+          <TouchableOpacity style={styles.optionItem} onPress={() => setAboutModal(true)}>
             <Ionicons name="information-circle-outline" size={22} color="#000" />
             <Text style={styles.optionText}>About</Text>
             <Ionicons name="chevron-forward" size={20} color="#888" />
@@ -930,6 +1146,78 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* App Version */}
         <Text style={styles.versionText}>Version 1.0.0</Text>
+
+        <Modal visible={passwordModal} transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="New password"
+                placeholderTextColor="#999"
+                secureTextEntry
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={() => { setPasswordModal(false); setNewPassword(""); }}>
+                  <Text style={styles.rejectButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={handleUpdatePassword}>
+                  <Text style={styles.acceptButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={profileModal} transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Update Profile</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor="#999"
+                value={profileName}
+                onChangeText={setProfileName}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone"
+                placeholderTextColor="#999"
+                keyboardType="phone-pad"
+                value={profilePhone}
+                onChangeText={setProfilePhone}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={() => setProfileModal(false)}>
+                  <Text style={styles.rejectButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={handleSaveProfile}>
+                  <Text style={styles.acceptButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={aboutModal} transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>About</Text>
+              <Text style={styles.modalText}>Object Transfer App</Text>
+              <Text style={styles.modalText}>Version 1.0.0</Text>
+              <Text style={styles.modalText}>Developed by Admin+App</Text>
+              <Text style={styles.modalText}>Contact: support@example.com</Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={() => setAboutModal(false)}>
+                  <Text style={styles.acceptButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScrollView>
   );
@@ -1098,6 +1386,71 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 40,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  summaryItem: {
+    alignItems: "center",
+    minWidth: 90,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: "#666666",
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCard: {
+    width: "90%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000000",
+  },
+  modalText: {
+    fontSize: 14,
+    color: "#333333",
+    marginTop: 4,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+  acceptBtn: {
+    flex: 1,
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  rejectBtn: {
+    flex: 1,
+    backgroundColor: "#F44336",
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: 8,
+    alignItems: "center",
+  },
+  actionText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   emptyText: {
     fontSize: 16,
@@ -1363,14 +1716,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginHorizontal: 5,
   },
-  statValue: {
+  profileStatValue: {
     fontSize: 20,
     fontWeight: "700",
     color: "#000000",
     marginTop: 8,
     marginBottom: 4,
   },
-  statLabel: {
+  profileStatLabel: {
     fontSize: 12,
     color: "#666666",
   },
@@ -1447,6 +1800,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888888",
     marginBottom: 30,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 20,
+    width: "100%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000000",
+    marginBottom: 12,
+  },
+  modalText: {
+    fontSize: 14,
+    color: "#000000",
+    marginBottom: 8,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: "#F2F4F8",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: "#000",
+    marginBottom: 10,
   },
   notificationBadge: {
     position: "absolute",

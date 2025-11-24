@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,12 @@ import {
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getDataById, getAllData, updateData } from "../Helper/firebaseHelper";
 
 const TripDetails = ({ navigation, route }) => {
-  const [tripStatus, setTripStatus] = useState("pending"); // pending, accepted, completed
-  
-  // Sample trip data - this would come from props/route params in real app
-  const tripData = route?.params?.tripData || {
+  const [tripStatus, setTripStatus] = useState("pending");
+  const { orderId } = route?.params || {};
+  const [tripData, setTripData] = useState(route?.params?.tripData || {
     tripId: "TRP12345",
     tripDate: new Date().toLocaleDateString(),
     tripTime: new Date().toLocaleTimeString(),
@@ -53,7 +53,100 @@ const TripDetails = ({ navigation, route }) => {
     paymentMethod: "Cash",
     bookingTime: new Date().toLocaleString(),
     priority: "Normal", // Normal, Urgent, Express
-  };
+  });
+  const [pricePerKm, setPricePerKm] = useState(null);
+
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!orderId) return;
+      try {
+        const order = await getDataById("orders", orderId);
+        if (order) {
+          setTripData({
+            tripId: orderId,
+            tripDate: new Date(order.createdAt || new Date()).toLocaleDateString(),
+            tripTime: new Date(order.createdAt || new Date()).toLocaleTimeString(),
+            pickupLocation: order.senderAddress || order.originCity || "",
+            pickupCoordinates: { lat: order.originLat, lng: order.originLng },
+            dropLocation: order.receiverAddress || order.destinationCity || "",
+            dropCoordinates: { lat: order.destinationLat, lng: order.destinationLng },
+            distance: `${Number(order.distance || 0).toFixed(2)} km`,
+            estimatedTime: (() => {
+              const d = Number(order.distance || 0);
+              if (d < 50) return "2-4 hours";
+              if (d < 100) return "4-6 hours";
+              if (d < 200) return "6-8 hours";
+              return "8-12 hours";
+            })(),
+            vehicleType: "Bike",
+            packageDetails: {
+              type: order.categoryName || order.packageType || "",
+              weight: `${order.weight || "N/A"}`,
+              size: order.packageType || "",
+              quantity: "1 package",
+              description: order.additionalNotes || "",
+              specialInstructions: "",
+              fragile: false,
+            },
+            customer: {
+              name: order.customerName || "",
+              phone: order.receiverPhone || order.senderPhone || "",
+              email: order.customerEmail || "",
+              rating: 0,
+              totalTrips: 0,
+              address: order.senderAddress || "",
+            },
+            receiver: {
+              name: order.receiverName || "",
+              phone: order.receiverPhone || "",
+              address: order.receiverAddress || "",
+            },
+            fare: `Rs. ${Number(order.price || 0).toFixed(2)}`,
+            baseFare: "",
+            distanceFare: "",
+            serviceFee: "",
+            paymentMethod: "Cash",
+            bookingTime: new Date(order.createdAt || new Date()).toLocaleString(),
+            priority: "Normal",
+          });
+          setTripStatus(order.status || "pending");
+        }
+      } catch (e) {
+        // leave default data
+      }
+    };
+    loadOrder();
+  }, [orderId]);
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const priceDataResult = await getAllData("price");
+        if (priceDataResult && priceDataResult.length > 0) {
+          setPricePerKm(priceDataResult[0].price);
+        }
+      } catch (e) {
+      }
+    };
+    fetchPrice();
+  }, []);
+
+  const displayedDistance = typeof tripData.distance === "string"
+    ? tripData.distance
+    : `${Number(tripData.distance || 0).toFixed(2)} km`;
+
+  const displayedEarning = (() => {
+    const existing = tripData.fare;
+    if (existing) return existing;
+    const d = typeof tripData.distance === "string"
+      ? parseFloat(String(tripData.distance).replace("km", "").trim())
+      : Number(tripData.distance || 0);
+    if (d > 0 && pricePerKm && Number(pricePerKm) > 0) {
+      const val = d * Number(pricePerKm);
+      return `Rs. ${val.toFixed(2)}`;
+    }
+    return "Not calculated";
+  })();
 
   const handleAccept = () => {
     setTripStatus("accepted");
@@ -83,6 +176,56 @@ const TripDetails = ({ navigation, route }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
+        {orderId && (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Trip Request</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Customer Name:</Text>
+            <Text style={styles.detailValue}>{tripData?.customer?.name || ""}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Pickup Location:</Text>
+            <Text style={styles.detailValue}>{tripData.pickupLocation || ""}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Drop Location:</Text>
+            <Text style={styles.detailValue}>{tripData.dropLocation || ""}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Estimated Distance:</Text>
+            <Text style={styles.detailValue}>{displayedDistance}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Estimated Earning:</Text>
+            <Text style={styles.detailValue}>{displayedEarning}</Text>
+          </View>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.button, styles.acceptButton]}
+              onPress={async () => {
+                if (!orderId) return;
+                await updateData("orders", orderId, { status: "in_transit", updatedAt: new Date().toISOString() });
+                setTripStatus("accepted");
+                navigation.navigate("PickupNavigation", { orderId });
+              }}
+            >
+              <Text style={styles.acceptButtonText}>Start Moving to Pickup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.rejectButton]}
+              onPress={async () => {
+                if (!orderId) return;
+                await updateData("orders", orderId, { status: "cancelled", updatedAt: new Date().toISOString() });
+                setTripStatus("completed");
+                alert("Trip cancelled");
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.rejectButtonText}>Cancel Trip</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        )}
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -331,7 +474,7 @@ const TripDetails = ({ navigation, route }) => {
         </View>
 
         {/* Action Buttons */}
-        {tripStatus === "pending" && (
+        {!orderId && tripStatus === "pending" && (
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.button, styles.rejectButton]}
@@ -349,7 +492,7 @@ const TripDetails = ({ navigation, route }) => {
           </View>
         )}
 
-        {tripStatus === "accepted" && (
+        {!orderId && tripStatus === "accepted" && (
           <TouchableOpacity
             style={[styles.button, styles.completeButton]}
             onPress={handleCompleteTrip}
