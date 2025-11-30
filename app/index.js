@@ -24,6 +24,8 @@ import CustomerHome from "./pages/CustomerHome";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerSignup from "./pages/CustomerSignup";
 import DirectChat from "./pages/DirectChat";
+import AdminChat from "./pages/AdminChat";
+import AboutUs from "./pages/AboutUs";
 import MapSelector from "./pages/MapSelector";
 import Notifications from "./pages/Notifications";
 import OrderConfirmation from "./pages/OrderConfirmation";
@@ -54,6 +56,7 @@ const RiderStack = () => (
     <Stack.Screen name="PickupNavigation" component={PickupNavigation} options={{ headerShown: false }} />
     <Stack.Screen name="RiderChat" component={RiderChat} />
     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+    <Stack.Screen name="AdminChat" component={AdminChat} options={{ headerShown: false }} />
     <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
 
   </Stack.Navigator>
@@ -76,20 +79,52 @@ const CustomerStack = () => (
     <Stack.Screen name="CustomerBookTrip" component={CustomerBookTrip} />
     <Stack.Screen name="CustomerChat" component={CustomerChat} />
     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+    <Stack.Screen name="AdminChat" component={AdminChat} options={{ headerShown: false }} />
+    <Stack.Screen name="AboutUs" component={AboutUs} options={{ headerShown: false }} />
     <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
 
   </Stack.Navigator>
 );
 
-const App = () => {
-  // Choose stack based on role and authentication
-  const RenderStack = () => {
-    const userRole = useSelector((state) => state.home.role);
-    const user = useSelector((state) => state.home.user);
-  
-    const isLoggedIn = user && Object.keys(user).length > 0;
 
-    if (!isLoggedIn) {
+const RenderStack = () => {
+  const userRole = useSelector((state) => state.home.role);
+  // alert (userRole)
+  const user = useSelector((state) => state.home.user);
+
+  const isLoggedIn = user && Object.keys(user).length > 0;
+
+  // if (!isLoggedIn) {
+  //   return (
+  //     <Stack.Navigator
+  //       key="auth-stack"
+  //       initialRouteName="CustomerLogin"
+  //       screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}
+  //     >
+  //       <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
+  //       <Stack.Screen name="Select" component={RoleSelection} options={{ headerShown: false }} />
+  //       <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+  //       <Stack.Screen name="CustomerSignup" component={CustomerSignup} options={{ headerShown: false }} />
+  //       <Stack.Screen name="RiderLogin" component={RiderLogin} options={{ headerShown: false }} />
+  //       <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
+  //       <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
+  //       <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
+  //       <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
+  //       <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
+  //       <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
+  //       <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
+  //     <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+  //     <Stack.Screen name="AdminChat" component={AdminChat} options={{ headerShown: false }} />
+  //     </Stack.Navigator>
+  //   );
+  // }
+
+  switch (userRole) {
+    case "Customer":
+      return <CustomerStack key="customer-stack" />;
+    case "Rider":
+      return <RiderStack key="rider-stack" />;
+    default:
       return (
         <Stack.Navigator
           key="auth-stack"
@@ -104,43 +139,18 @@ const App = () => {
           <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
           <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
           <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
-          <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
-          <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
-          <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
-          <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
-        <Stack.Screen name="DirectChat" component={DirectChat} options={{ headerShown: false }} />
+          {/* <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} /> */}
+          {/* <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} /> */}
+          {/* <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} /> */}
+          {/* <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} /> */}
         </Stack.Navigator>
       );
-    }
+  }
+};
 
-    switch (userRole) {
-      case "Customer":
-        return <CustomerStack key="customer-stack" />;
-      case "Rider":
-        return <RiderStack key="rider-stack" />;
-      default:
-        return (
-          <Stack.Navigator
-            key="auth-stack"
-            initialRouteName="CustomerLogin"
-            screenOptions={{ contentStyle: { backgroundColor: "#538cc6" } }}
-          >
-            <Stack.Screen name="CustomerLogin" component={CustomerLogin} options={{ headerShown: false }} />
-            <Stack.Screen name="Select" component={RoleSelection} options={{ headerShown: false }} />
-            <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CustomerSignup" component={CustomerSignup} options={{ headerShown: false }} />
-            <Stack.Screen name="RiderLogin" component={RiderLogin} options={{ headerShown: false }} />
-            <Stack.Screen name="RiderSignup" component={RiderSignup} options={{ headerShown: false }} />
-            <Stack.Screen name="VehicelInformationr" component={VehicelInformationr} options={{ headerShown: false }} />
-            <Stack.Screen name="SetMode" component={SetMode} options={{ headerShown: false }} />
-            <Stack.Screen name="RiderHome" component={RiderHome} options={{ headerShown: false }} />
-            <Stack.Screen name="CustomerHome" component={CustomerHome} options={{ headerShown: false }} />
-            <Stack.Screen name="TripDetails" component={TripDetails} options={{ headerShown: false }} />
-            <Stack.Screen name="Setting" component={Setting} options={{ headerShown: false }} />
-          </Stack.Navigator>
-        );
-    }
-  };
+const App = () => {
+  // Choose stack based on role and authentication
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#538cc6" }}>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Switch, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
 import { useDispatch } from "react-redux";
+import { CommonActions } from "@react-navigation/native";
 import { setRole, setUser } from "../redux/Slices/HomeDataSlice";
 import { logout } from "../Helper/firebaseHelper";
 
@@ -79,11 +80,27 @@ export default function Setting({ navigation }) {
                     // Clear Redux state
                     dispatch(setRole(""));
                     dispatch(setUser({}));
+                    
+                    // Reset navigation stack to login screen
+                    navigation.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "CustomerLogin" }],
+                      })
+                    );
                   } catch (error) {
                     console.error("Logout error:", error);
                     // Still clear the state even if Firebase logout fails
                     dispatch(setRole(""));
                     dispatch(setUser({}));
+                    
+                    // Reset navigation stack to login screen
+                    navigation.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "CustomerLogin" }],
+                      })
+                    );
                   }
                 }
               }

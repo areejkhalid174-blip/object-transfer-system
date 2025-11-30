@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useDispatch, useSelector } from "react-redux";
@@ -717,8 +717,6 @@ const SettingsScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.home?.user);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
   const [supportAgent, setSupportAgent] = useState(null);
   const [loadingSupport, setLoadingSupport] = useState(true);
 
@@ -789,10 +787,9 @@ const SettingsScreen = ({ navigation }) => {
       || supportAgent?.email
       || "Support";
 
-    navigation.navigate("DirectChat", {
+    navigation.navigate("AdminChat", {
       currentUserId: user.uid,
-      otherUserId: "NPoKBq3LCLTDLCZYOf36xyoVDvN2",
-      otherUserName: agentName,
+      adminName: agentName,
     });
   };
 
@@ -848,42 +845,6 @@ const SettingsScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Notification Settings</Text>
-
-          <View style={styles.toggleItem}>
-            <View style={styles.toggleLeft}>
-              <Ionicons name="notifications-outline" size={22} color="#000" />
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleTitle}>Push Notifications</Text>
-                <Text style={styles.toggleSubtitle}>Receive push notifications</Text>
-              </View>
-            </View>
-            <Switch
-              value={pushNotifications}
-              onValueChange={setPushNotifications}
-              trackColor={{ false: "#767577", true: "#4CAF50" }}
-              thumbColor={pushNotifications ? "#fff" : "#f4f3f4"}
-            />
-          </View>
-
-          <View style={styles.toggleItem}>
-            <View style={styles.toggleLeft}>
-              <Ionicons name="mail-outline" size={22} color="#000" />
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleTitle}>Email Notifications</Text>
-                <Text style={styles.toggleSubtitle}>Get updates via email</Text>
-              </View>
-            </View>
-            <Switch
-              value={emailNotifications}
-              onValueChange={setEmailNotifications}
-              trackColor={{ false: "#767577", true: "#4CAF50" }}
-              thumbColor={emailNotifications ? "#fff" : "#f4f3f4"}
-            />
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Support</Text>
 
           <TouchableOpacity
@@ -920,10 +881,10 @@ const SettingsScreen = ({ navigation }) => {
 
           <TouchableOpacity 
             style={styles.optionItem}
-            onPress={() => Alert.alert("About", "Object Transfer System v1.0.0")}
+            onPress={() => navigation.navigate("AboutUs")}
           >
             <Ionicons name="information-circle-outline" size={22} color="#000" />
-            <Text style={styles.optionText}>About</Text>
+            <Text style={styles.optionText}>About Us</Text>
             <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
         </View>
